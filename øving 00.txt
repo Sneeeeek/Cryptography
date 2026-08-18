@@ -6,17 +6,26 @@
     Cleartext -> Data that is not intended to be encrypted
 
 3. How many possible keys are there in a Caesar cipher?
+    Depends on your alphabet, but 26 in english
+
 4. What is ROT13 and what has the “import this” statement in Python got to do with it?
-5. Decode this Caesar.py message:
-XÆA5MA9Z1XV1VOMUV7MV5M9ZØ7ZXQ
+    ROT13 is caesar cipher with a 13 rotated key. Import this' message is encrypted with ROT13
+
+5. Decode this Caesar.py message: XÆA5MA9Z1XV1VOMUV7MV5M9ZØ7ZXQ
+    Key=17: 'GJØR ØVINGENE! DET ER VIKTIG.'
+
 6. Vigenère cipher are normally harder to break than Caesar cipher. When is this not the case?
-7. This message is coded by using the Vigenere.py code, but the key was very short. Can you decode it?
-Ø 69RSS///WæZ5æøWå8S:ÅÆø4ø8øQZÅ6Øø8
+    
+
+7. This message is coded by using the Vigenere.py code, but the key was very short. Can you decode it? Ø 69RSS///WæZ5æøWå8S:ÅÆø4ø8øQZÅ6Øø8
+
 8. Who was Vigenère?
+
 a. When did he live?
+
 b. What other cipher is he known for having invented?
+
 9. What are the strengths and weaknesses of the Vernam cipher?
+
 10. There is a special case where the Vigenère cipher and the Vernam cipher are the same. What is the
 condition for this to be true.
-
-Key=17: 'GJØR ØVINGENE! DET ER VIKTIG.'
