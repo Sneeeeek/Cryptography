@@ -44,22 +44,31 @@ if  __name__ == "__main__":
     print("   Length  : ",alen,"\n")    
     
 
-    while True:
-        k = input("=> Enter the cipher key (string) : ")
-        m = input("=> Enter the plaintext message   : ")
+    ciphertext = "1fR-EssfN-SqEoNfNeE-SfToIoG"
+
+    for a in alphabet:
+        for b in alphabet:
+            key = a + b
+            with open("demofile.txt", "a") as f:
+                f.write(key + ": " + D(key, ciphertext) + "\n")
+            # print(key, D(key, ciphertext))
+
+    # while True:
+    #     k = input("=> Enter the cipher key (string) : ")
+    #     m = input("=> Enter the plaintext message   : ")
         
-        if (set(k) | set(m) | set(alphabet)) == set(alphabet):
-            break
-        print("\n*** The key and the message must belong to the alphabet!\n")
+    #     if (set(k) | set(m) | set(alphabet)) == set(alphabet):
+    #         break
+    #     print("\n*** The key and the message must belong to the alphabet!\n")
 
         
         
-    c = E(k,m)    
-    print()
-    print("== k: ",k)
-    print("== m: ",m)
-    print("== c: ",c)
+    # c = E(k,m)    
+    # print()
+    # print("== k: ",k)
+    # print("== m: ",m)
+    # print("== c: ",c)
     
-    print()
-    print("The key 'k' and the message 'm' can be modified.")
-    print("E(k,m)  and  D(k,c)  can be used.") 
+    # print()
+    # print("The key 'k' and the message 'm' can be modified.")
+    # print("E(k,m)  and  D(k,c)  can be used.") 

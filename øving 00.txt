@@ -15,17 +15,198 @@
     Key=17: 'GJØR ØVINGENE! DET ER VIKTIG.'
 
 6. Vigenère cipher are normally harder to break than Caesar cipher. When is this not the case?
-    
+    If the key is short, you can use frequency analysis to infer the likely properties of the key (lenght for example).
 
 7. This message is coded by using the Vigenere.py code, but the key was very short. Can you decode it? Ø 69RSS///WæZ5æøWå8S:ÅÆø4ø8øQZÅ6Øø8
+    htps://www.dcode.fr/vigenere-cipher
 
 8. Who was Vigenère?
+    Cryptographer in france
 
 a. When did he live?
+    1500s
 
 b. What other cipher is he known for having invented?
+    Autokey cipher. Vignere did not actually invent the vignere cipher.
 
 9. What are the strengths and weaknesses of the Vernam cipher?
+    (One time pad) Its perfectly secure, but can only be used once and is very impractical to use. It must also be kept secret.
 
-10. There is a special case where the Vigenère cipher and the Vernam cipher are the same. What is the
-condition for this to be true.
+10. There is a special case where the Vigenère cipher and the Vernam cipher are the same. What is the condition for this to be true.
+    If the key is the same or longer than the message to be encrypted, and the key is perfectly random
+
+11.  Vernam: (Vernam.py) 
+a. m = “Security is important.” 
+b. k = “En fin liten nøkkel, men er den god nok.” 
+c. c = <denne finner du ut selv> 
+
+== m:  b'Security is important.'
+== k:  b'En fin liten n\xc3\xb8kkel, men er den god nok.'
+== c:  b'\x16\x0bC\x13\x1b\x07T\x15I\x1d\x16NI\x03\xb3\xd7\x19\x1f\x04\x02X\x0e'
+
+ 
+12.  For the Caesar and Vernam cipher, knowing a (plaintext,ciphertext) pair also implies that you know the key. 
+a. Can you think of a way around this severe problem?  
+    You need to roll the key and get a fresh one every time. That way if someone breaks your cipher, it doesnt really matter as it cant be reused.
+ 
+13.  When is using a one-time pad a good solution? 
+    When you need perfect security and youre able to share keys safely (in person for example).
+ 
+14.  What is a bijective mapping? 
+    It is bijective if each element in pool A maps to exactly and only 1 element in pool B. A ceasar cipher is bijective since each letter ABC... maps to only for example NOP... in rot13.
+ 
+15.  What is a secure permutation? 
+    Secure permutation is when
+        1. The key determins the permutation
+        2. Different keys lead to different permutations
+        3. The resulting ciphertext should look random, as in there are no patterns that an attacker can use to infer things about the plaintext.
+ 
+16.  What is a mode-of-operation? 
+    A mode of operation a method applied to a block cipher when the message is longer than 1 block. 
+    Its meant to hide patterns so that an attacker can not infer information about the plaintext. 
+    For example CBC where a block is XORed against its preceeding block. 
+ 
+17.  Is a secure permutation and a secure mode-of-operation enough to produce a secure cipher? (explain why/why not) 
+    In theory yes, as an attacker is not able to infer anything about the key or the plaintext. 
+    However, in practice it may not be used correctly or have all the required conditions fulfilled. If so, it is not secure. 
+ 
+18.  What are (c,p) pairs?
+    Ciphertext, Plaintext pair
+ 
+19.  What is an attack model? (explain) 
+    An attack model is our assumptions of what information an attacker has, how they will interact with our cipher, and what resources they have available. 
+    Per the book, the goals of an attack model are as follows:
+        1. To set requirements for cryptographers who design ciphers so that they know what attackers and what kinds of attacks to protect against.
+        2. To give guidelines to users about whether a cipher will be safe to use in their environment.
+        3. To provide clues for cryptanalysts who attempt to break ciphers so they know whether a given attack is valid. An attack is valid only if it’s doable in the model considered.
+ 
+20.  What is captured by security goals? (explain) 
+    Cryptographers have defined 2 concrete security goals that should be met to have a secure algorithm. These definitions exist to create a concrete goal instead of a vague one.
+        1. Indistinguishability -> An encrypted string should be indistinguishable from a random string. 
+            Hypothetical: If you recieve one encrypted and one random, you should not be able to tell which is which, even if trying to decrypt it.
+        2. Nonmalleability -> Given a ciphertext, it should be impossible to construct another ciphertext that is related to the original string when decrypted.  
+ 
+21.  When is an attack considered to be “valid”? (explain) 
+    An attack is valid if follows the rules of a given attack model? (i.e. the attack isnt cheating)? So only have knowledge of exactly what they should have.
+ 
+22.  Where did Kerckhoff work? 
+    Auguste Kerckhoffs was a dutch linguist and cryptographer who worked in france. Among other things, he worked on The Journal of Military Science (Le Journal des Sciences Militaires)
+ 
+23.  What does his principle mean in practice? 
+    A cipher is only secure if its still safe despite how it works being public. As long as the key is secret, everything else can be public without issue. 
+
+24.  What is a black-box model? (explain – see more info in the book) 
+    A black mox model is where an attacker can only see what goes in and what comes out. 
+ 
+25.  Is measuring computation delays part of a black-box model? 
+    In theory no, but in practice yes it can be. For example if an attacker has physical access to a machine, they may do things like observe ram hoping to infer information. 
+ 
+26.  What is a passive attack? 
+    In a passive attack, the attack may only observe I/O, not perform any themselves. In an active attack they can run encrypt/decrypt queries.
+ 
+27.  Attack models: COA 
+    a. What is a COA and what is it capable of? 
+        Ciphertext- only attackers (COAs). They may only observe encrypted ciphertext and nothing else.
+
+    b. Do you think all crypto-system need to be able to withstand a COA? (why/why not) 
+        Yes. If an attacker was able to crack your encryption using only the ciphertext, your cipher is trash. 
+
+    c. Is a COA considered to be passive or active? 
+        Passive.
+ 
+28.  Attack models: KPA 
+    a. What is a KPA and what is it capable of? 
+        Known- plaintext attackers (KPAs). They may observe ciphertext and know the corresponding plaintext. 
+
+    b. Do you think all crypto-system need to be able to withstand a KPA? (why/why not) 
+        Yes. It should be impossible to reverse engineer the key from plaintext-ciphertext pairs.
+
+    c. Is a KPA considered to be passive or active? 
+        Passive.
+
+ 
+29.  What is “gardening” and what is the purpose of it? 
+    Gardening is collecting lots of C,P pairs hoping to be able to discover patterns in the data. It may also include constructing inputs yourself in hopes of learning something. 
+        Purpose: Analyse how the cipher works, try to discover weaknesses, and ultimately to recover the key or predict outcomes.  
+ 
+30.  Attack models: CPA 
+    a. What is a CPA and what is it capable of? 
+        Chosen- plaintext attackers (CPAs). They may perform encryption queries on plaintext of their choosing and observe the corresponding ciphertext. 
+        They can see any C,P pair they want.
+
+    b. Do you think all crypto-system need to be able to withstand a CPA? (why/why not) 
+        Yes. It should be impossible to reverse engineer the key from plaintext-ciphertext pairs, even when you can construct your own plaintext.
+
+    c. Is a CPA considered to be passive or active? 
+        Active
+
+ 
+31.  What is the difference between a chosen-plaintext attack and a known-plaintext attack? 
+    In KPA, the attacker only has access to existing plaintexts. 
+    In CPA an attacker can choose what input they will.
+        This may be useful for the attacker as they can test specific inputs in hopes of revealing some weakness in the cipher.
+
+32.  Attack models: CCA 
+    a. What is a CCA and what is it capable of? 
+        Chosen- ciphertext attackers (CCAs). They can perform both encrypt and decrypt queries. They can submit plaintext/ciphertext of their choosing and observe the corresponding outputs.
+
+    b. Do you think all crypto-system need to be able to withstand a CCA? (why/why not)
+        No. This would depend on what constitutes as a crypto system. 
+        There are situations where it is not reasonable to assume that an attacker will gain access to the decryption method. In those instances, this threat level may not be representative.
+
+    c. Is a CCA considered to be passive or active? 
+        Active.
+
+    d. What is not known to the attacker in CCA? 
+        The key.
+
+ 
+33.  Is it computationally infeasible to attack AES-128? (why/why not)
+    It is computationally infeasible to crack AES-128 becuase it is too computationally expensive (takes too long and energy to do). The keyspace is too large.
+ 
+34.  What is a Gray-Box Attack model? (explain) 
+    In a gray box attack, an attacker has some knowledge or access to the implementation of the cipher. In real life this would mean for example they can access the computer that is doing the encryption. 
+ 
+35.  What is the difference between an invasive attack and a non-invasive attack? (give examples) 
+    A non invasive attack does not alter or affect the underlying processes in any way. This would for example be measuring RAM or voltages.
+    An invasive attack alters the pr    ocesses in some way, like manipulating the RAM and flipping bits manually.
+ 
+36.  What does indistinguishable mean in the context of security goals? 
+    The resulting encrypted data should be indistinguishable from random data.
+ 
+37.  Indistinguishability (IND) is the “normal” goal in many contexts, but is it always sufficient? (explain) 
+    No. Even if encrypted data is indistinguishable at a smaller scale, it may still be weak to statistical analysis with a large sample size or other alternative attacks. 
+ 
+38.  Non-malleability (NM) is a different security goal.  
+    a. What does NM mean in our context? 
+        Nonmalleability means its impossible to construct a ciphertext C2 that is related to C1 in any useful or predictable way.
+        If the output of a cipher is "consistent" given an input, it creates a situation where an attacker can try combinations of C2 to try to "match" C1 and learn about C1s content.  
+
+    b. What kind of (symmetric key) ciphers would be susceptible to NM vulnerabilities?  
+        Caesar ciphers and other simple substitution ciphers are weak to NM vulnerabilities becuase they are deterministic and preserve the structure of the plaintext. 
+ 
+39.  Why is OTP not the perfect encryption scheme after all? (explain) 
+    OTP is malleable. Since each letter is "independent" so to say. When an attacker changes something in that one letter, it doesnt affect the other letters. 
+ 
+40.  What is the problem with OTP (and can it be fixed?)? (explain) 
+    Since OTP requires a key that is as long as the message, its effectively doubling the required storage required. This becomes very impractical for large volumes of data.
+    The key is also, as the name implies, one time use, so parties who communicate often need to exhange keys securely often. Also impractical.
+    These problems can not really be fixed as they are inherent to the cipher.  
+ 
+41.  What is IND-CPA and why is it important (read the book)? (explain) 
+    IND CPA = INDistinguishability against Chosen Plaintext Attacks. Also called "semantic security". 
+        CPA -> They may perform encryption queries on plaintext of their choosing and observe the corresponding ciphertext. 
+    Thus, it means the systems ciphertexts should be indistinguishable for an attacker with that level of access.
+        Implication: To achieve IND- CPA security, encryption must return different ciphertexts if called twice on the same plaintext; otherwise, an attacker could identify duplicate plaintexts from their ciphertexts, contradicting the definition that ciphertexts shouldn’t reveal any information. 
+            Real life meaning: Server has key and encrypts plaintext using the key + nonce. They send off encrypted text + nonce (in cleartext). -> Client recieves encrypted text + the nonce (in cleartext), they use the key + the nonce to decrypt into the plaintext.
+ 
+42.  Having fun with Malleable_OTP.py 
+Make a copy of Malleable OTP.py and modify the copy such that. 
+- otp = bytes("En dårlig OTP!!",'utf-8') 
+- p1 = B"BTS4420 er BEST!" 
+ 
+BTS4420 is of course a splendid and very interesting subject, but as we all know BTS4410 is even better.  
+ 
+Make further modifications to Malleable_OTP.py and compute a ciphertext c2 such that the 
+corresponding plaintext would be B"BTS4410 er BEST!" 
+Then print c1 and c2 (with the bytes2hexstr() function).
