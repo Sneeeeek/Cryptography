@@ -186,11 +186,13 @@ a. Can you think of a way around this severe problem?
         Caesar ciphers and other simple substitution ciphers are weak to NM vulnerabilities becuase they are deterministic and preserve the structure of the plaintext. 
  
 39.  Why is OTP not the perfect encryption scheme after all? (explain) 
-    OTP is malleable. Since each letter is "independent" so to say. When an attacker changes something in that one letter, it doesnt affect the other letters. 
+    OTP is malleable. Since each letter is "independent" so to say. If an attacker knows something (useful) about the plaintext, they can use that to change specific things about the message.
+        For example, if you know your target is going to transfer money and youve discovered their account number, you can use the XOR trick to change the account number into yours instead. 
  
 40.  What is the problem with OTP (and can it be fixed?)? (explain) 
     Since OTP requires a key that is as long as the message, its effectively doubling the required storage required. This becomes very impractical for large volumes of data.
     The key is also, as the name implies, one time use, so parties who communicate often need to exhange keys securely often. Also impractical.
+    The mentioned malleability problem above.
     These problems can not really be fixed as they are inherent to the cipher.  
  
 41.  What is IND-CPA and why is it important (read the book)? (explain) 
@@ -201,12 +203,12 @@ a. Can you think of a way around this severe problem?
             Real life meaning: Server has key and encrypts plaintext using the key + nonce. They send off encrypted text + nonce (in cleartext). -> Client recieves encrypted text + the nonce (in cleartext), they use the key + the nonce to decrypt into the plaintext.
  
 42.  Having fun with Malleable_OTP.py 
-Make a copy of Malleable OTP.py and modify the copy such that. 
-- otp = bytes("En dårlig OTP!!",'utf-8') 
-- p1 = B"BTS4420 er BEST!" 
+    Make a copy of Malleable OTP.py and modify the copy such that. 
+    - otp = bytes("En dårlig OTP!!",'utf-8') 
+    - p1 = B"BTS4420 er BEST!" 
  
-BTS4420 is of course a splendid and very interesting subject, but as we all know BTS4410 is even better.  
+    BTS4420 is of course a splendid and very interesting subject, but as we all know BTS4410 is even better.  
  
-Make further modifications to Malleable_OTP.py and compute a ciphertext c2 such that the 
-corresponding plaintext would be B"BTS4410 er BEST!" 
-Then print c1 and c2 (with the bytes2hexstr() function).
+    Make further modifications to Malleable_OTP.py and compute a ciphertext c2 such that the 
+    corresponding plaintext would be B"BTS4410 er BEST!" 
+    Then print c1 and c2 (with the bytes2hexstr() function).
