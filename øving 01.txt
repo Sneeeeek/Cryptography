@@ -1,0 +1,64 @@
+1. What is a “random bit generator”?
+    A random bit generator is a generator that outputs bits that are unpredictable and statistically unbiased. 
+    
+2. What is a “pseudorandom bit generator” (PRBG)?
+    A pseudorandom bit generator takes in a seed value and uses a formula of some sort to output random bits using the seed as a base.
+
+3. What is the input to a PRBG called?
+    Seed
+
+4. PRBG: What is the “next-bit” test? (explain)
+    If you know the preceeding bits, you should not be able to guess the next bit with a success rate of higher than 50%.  
+
+5. PRGB: What has “polynomial time” to do with the “next-bit” test? (explain)
+    Polynomial time is useful becuase security only requires that predicting the next bit be infeasible for efficient attackers (they have limited time).
+    We use polynomial time to decide when is good enough in terms of computability. For a next bit test, if the next bit can only be computed in slower than polynomial time, that is generally considered infeasible.
+
+6. What is a “cryptographically secure” PRBG (CSPRBG)? (explain)
+    A PRNG is cryptographically secure if its backtracking resistant (you cannot guess what came before) and prediction resistant (you cannot guess what comes next).
+
+7. What is a “true random bit generator”?
+    A true random bit generator uses phyiscal processes to generate truly random bits, as the real world is not predictable.
+
+    a. Would there be any disadvantages to using a true random bit generator?
+        Its reliant on having enthropy "stored up" from a physical source. If you run out of enthropy, you cannot generate more true random numbers and you have to wait. 
+        This is an issue for example when the computer turns on as it hasnt had time to build a backlog of enthropy yet.
+    b. Give some examples of true random bit generators
+        Thermal noise, inputs from users (mouse or keyboard, though if the user is AFK you cant sample those ofc), noise from the room or components, Cloudflare famously uses the lava lamps. 
+        
+
+8. What is the “Fortuna CSPRNG”?
+    Fortuna is a cryptographically Secure PseudoRandom Number Generator. 
+
+    a. Who devised Fortuna?
+        Niels Ferguson and Bruce Schneier
+    b. Which operating systems use Fortuna?
+        The book claims windows uses it, but looking online that doesnt seem to be correct so likely a mistake? Apple OSes uses it and FreeBSD uses it.
+    c. Explain the workings of the generator (which cipher primitive is it based on?)
+        Fortuna uses multiple enthropy pools. When you request a random number, it encrypts an incrementing counter with AES based encryption (according to google, doesnt seem to say in the book) using enthropy sourced from some of the pools.
+        Its based on a block? cipher primitive?
+    d. Which inputs does the generator take?
+        The generator takes the incrementing counter and a key that comes from the enthropy pool. 
+
+9. Python: Why is the random module not suitable for cryptographic purposes? (explain)
+    The random module is not cryptographically secure, and care about the quality of the probability distribution over prdictability. 
+    The python module uses the MT algorithm, in which you can predict future numbers if you have enough past numbers. 
+
+10. Python: Which is best to use: os.urandom or functions from the secrets module? (explain)
+    The python secrets module uses urandom to make its random numbers, so in theory they are the same. 
+    Its easier to work with the secrets module however which may make it better. On the other hand, the secrets module means youre trusting the developer that its safe.
+    I would say just use the secrets module.
+
+11. PRNGs are usually tested against a (standard) set of statistical tests.
+    a. Should CSPRNGs also be tested this way?
+        Yes, they are a good first test to check if the concept is viable or to catch simple issues.
+    b. CSPRNG: Is it enough to do these tests?
+        No, a statistical test only tells you like "the numbers we got are uniformly distributed" or whatever. 
+        They say nothing about if the generator is reistant to backtracking or prediction or example. 
+        Its also easy to design a generator that passes all the tests but is not secure.  
+
+12. Try out the RANDU python programs and google “randu”
+    Damn looks random but it aint.
+
+13. What is Dual_EC_DRBG and what is the problem with it?
+    Dual_EC_DRBG is an RNG algorithm which was later believed to have a backdoor inserted for use by the NSA. 

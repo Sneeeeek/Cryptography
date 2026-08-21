@@ -1,0 +1,269 @@
+3 CRYPTOGRAPHIC SECURITY
+
+Cryptographic definitions of security are not the same as those that apply to general computer security. The main difference between software security and cryptographic security is that we can quantify the latter. Unlike in the software world, where we usually say applications are either secure or insecure, in the cryptographic world it’s often possible to calculate the amount of effort required to break a cryptographic algorithm. Also, whereas software security focuses on preventing attackers from abusing a program’s code, the goal of cryptographic security is to make well-defined problems impossible to solve.
+
+Cryptographic problems involve mathematical notions but not complex math—at least, not in this book. This chapter walks through some of these security notions and how you can apply them to solve real-world problems.
+
+In the following sections, I discuss how to quantify crypto security in ways that are both theoretically sound and practically relevant. I discuss the notions of unconditional versus computational security, bit security versus full attack cost, provable versus heuristic security, and symmetric versus asymmetric key generation. I conclude the chapter with real-world examples of failures in seemingly strong cryptography.
+
+Defining the Impossible
+
+In Chapter 1, I described a cipher’s security relative to an attacker’s capabilities and goals and deemed a cipher secure if it’s impossible to reach these goals given an attacker’s known capabilities. But what does impossible mean in this context?
+
+Two notions define the concept of impossible in cryptography: unconditional security and computational security. Roughly speaking, unconditional security is about theoretical impossibility, whereas computational security is about practical impossibility. Unconditional security doesn’t quantify security because it views a cipher as either secure or insecure, with no middle ground; it’s therefore useless in practice, although it plays an important role in theoretical cryptography. Computational security is the more relevant and practical measure of the strength of a cipher.
+
+Security in Theory: Unconditional Security
+
+Unconditional security is based not on how hard it is to break a cipher but on whether it’s conceivable to break it at all. A cipher is unconditionally secure only if, given unlimited computation time and memory, it cannot be broken. Even if a successful attack on a cipher would take trillions of years, such a cipher is unconditionally insecure.
+
+For example, the one-time pad in Chapter 1 is unconditionally secure. Recall that the one-time pad encrypts a plaintext, P, to a ciphertext, C = P ⊕ K, where K is a random bit string that is unique to each plaintext. The cipher is unconditionally secure because, given a ciphertext and unlimited time to try all possible keys, K, and compute the corresponding plaintext, P, you’d still be unable to identify the right K because there are as many possible Ps as there are Ks.
+
+Security in Practice: Computational Security
+
+Unlike unconditional security, computational security views a cipher as secure if it cannot be broken within a reasonable amount of time and with reasonable resources such as memory, hardware, budget, and energy. Computational security is a way to quantify the security of a cipher or any crypto algorithm.
+
+For example, consider a cipher, E, for which you know a plaintext-ciphertext pair (P, C) but not the 128-bit key, K, that computes C = E(K, P). This cipher is not unconditionally secure because you could break it after trying the 2^128 possible 128-bit Ks until you find the one that satisfies E(K, P) = C. But in practice, even with testing 100 billion keys per second, it would take more than 100,000,000,000,000,000,000 years. In other words, reasonably speaking, this cipher is computationally secure because it’s practically impossible to break.
+
+We can express computational security in terms of two values:
+• t, which is a limit on the number of operations that an attacker will carry out
+• ε (epsilon), which is a limit on the probability of success of an attack
+
+We then say that a cryptographic scheme is (t, ε)-secure if an attacker performing at most t operations—whatever those operations are—has a probability of success that is no higher than ε, where ε is at least 0 and at most 1. Computational security gives a limit on how hard it is to break a cryptographic algorithm.
+
+Recognize that t and ε are just limits: if a cipher is (t, ε)-secure, then no attacker performing fewer than t operations will succeed (with probability ε). However, this doesn’t imply that an attacker doing exactly t operations will succeed, and it doesn’t provide the necessary number of operations, which may be much larger than t. We say that t is a lower bound on the necessary computation effort because you’d need at least t operations to compromise security.
+
+If we do know precisely how much effort it takes to break a cipher, we say that (t, ε)-security gives us a tight bound when an attack exists that breaks the cipher with probability ε and exactly t operations.
+
+For example, consider a symmetric cipher with a 128-bit key. Ideally, this cipher should be (t, t/2^128)-secure for any value of t between 1 and 2^128. The best attack should be brute force (trying all keys until you find the correct one). Any better attack would have to exploit some imperfection in the cipher, so we strive to create ciphers where brute force is the best possible attack.
+
+Given the statement (t, t/2^128)-secure, let’s examine the probability of success of three possible attacks:
+• In the first case, t = 1, an attacker tries one key and succeeds with a probability of ε = 1/2^128.
+• In the second case, t = 2^128, an attacker tries all 2^128 keys, and one succeeds. Thus, the probability ε = 1. (If the attacker tries all keys, the right one must be among them.)
+• In the third case, an attacker tries only t = 2^64 keys and succeeds with a probability of ε = 2^64/2^128 = 2^−64. When an attacker tries only a fraction of all keys, the success probability is proportional to the number of keys tried.
+
+We can conclude that a cipher with a key of n bits is at best (t, t/2^n)-secure, for any t between 1 and 2^n, because no matter how strong the cipher, a brute-force attack against it will always succeed. The key thus needs to be long enough to blunt brute-force attacks in practice.
+
+N O T E In this example, we’re counting the number of evaluations of the cipher, not the absolute time or number of processor clock cycles. Computational security is technology agnostic, which means a cipher that’s (t, ε)-secure today will be (t, ε)-secure tomorrow— but what’s considered secure in practice today might not be considered secure tomorrow.
+
+Quantifying Security
+
+When you’ve found an attack, you should first figure out how efficient it is in theory and how practical it is, if at all. Likewise, given a cipher that’s allegedly secure, you’ll want to know what amount of work it can withstand.
+
+To address those questions, I’ll explain how we measure cryptographic security in bits (the theoretical view) and what factors affect the actual cost of an attack.
+
+Measuring Security in Bits
+
+When speaking of computational security, a cipher is t-secure when a successful attack needs at least t operations. We thus avoid the nonintuitive (t, ε) notation by assuming a success probability of ε close to 1, or whatever probability we care about in practice. We then express security in bits, where “n-bit security” means that we need about 2^n operations to compromise some particular security notion.
+
+If you know approximately how many operations it takes to break a cipher, you can determine its security level in bits by taking the binary logarithm of the number of operations: if it takes 1,000,000 operations, the security level is log2(1,000,000), or about 20 bits (as 1,000,000 is approximately equal to 2^20). Recall that an n-bit key will give at most n-bit security because a brute-force attack with all 2^n possible keys will always succeed. But the key size doesn’t always match the security level—it just gives an upper bound, or the highest possible security level.
+
+A security level may be smaller than the key size for one of two reasons:
+• An attack broke the cipher in fewer operations than expected—for example, using a method that recovers the key by trying only a subset of the 2^n keys.
+• The cipher’s security level intentionally differs from its key size, as with most public-key algorithms. For example, the RSA algorithm with 1,024-bit private-key elements (thus with a 2,048-bit modulus) provides less than 128-bit security.
+
+Bit security proves useful when comparing the security level of ciphers, but it doesn’t provide enough information on the actual cost of an attack. It’s sometimes too simple an abstraction because it assumes that an n-bit-secure cipher takes 2^n operations to break, whatever these operations are. Two ciphers with the same bit security level can therefore have vastly different real-world security levels when you factor in the actual cost of an attack to a real attacker.
+
+Say we have two ciphers, each with a 128-bit key and 128-bit security. We must evaluate each cipher 2^128 times to break it, but the second cipher is 100 times slower than the first. Evaluating the second cipher 2^128 times thus takes the same time as 100 × 2^128 ≈ 2^134.64 evaluations of the first. If we count in terms of the first, fast cipher, then breaking the slower one takes 2^134.64 operations. If we count in terms of the second, slow cipher, it takes only 2^128 operations. Should we then say that the second cipher is stronger than the first? In principle, yes, but we rarely see such a hundred-fold performance difference between common ciphers.
+
+The inconsistent definition of an operation raises more difficulties when comparing the efficiency of attacks. Some attacks claim to reduce a cipher’s security because they perform 2^120 evaluations of some operation rather than 2^128 evaluations of the cipher, but the speed of each type of attack is left out of the analysis. The 2^120-operation attack won’t always be faster than a 2^128 brute-force attack.
+
+Nevertheless, bit security remains a useful notion as long as the operation is reasonably defined—meaning about as fast as an evaluation of the cipher. After all, in real life, all it takes to determine whether a security level is sufficient is an order of magnitude.
+
+Calculating the Full Attack Cost
+
+Bit security expresses the cost of the fastest attack against a cipher by estimating the order of magnitude of the number of operations it needs to succeed. But other factors affect the cost of an attack, and we must take these into account when estimating the actual security level. I’ll explain the four main ones: parallelism, memory, precomputation, and the number of targets.
+
+Parallelism
+
+The first factor to consider is computational parallelism—that is, the ability of the attack’s implementation to take advantage of parallel computing, such as multicore systems.
+
+For example, consider these two attacks of 256 operations each:
+• The first attack performs 256 sequentially dependent operations, computing x i+1 = f i(xi) for some fixed x0 and distinct functions fi (with i from 1 to 256).
+• The second attack performs 256 independent operations, computing xi = fi(x) for some fixed x and distinct functions fi (with i from 1 to 256).
+
+It can execute the fi(x) computations in parallel because each fi(x) is independent of the others.
+
+The difference between the two attacks is that one can parallelize the second attack but not the first. Parallel processing can be orders of magnitude faster than sequential processing. For example, if you had 2^16 = 65,536 processors available, you could divide the workload of the parallel attacks into 2^16 independent tasks, each performing 256 / 2^16 = 240 operations. The first attack, however, cannot benefit from having multiple cores available because each operation relies on the previous operation’s result. Therefore, the parallel attack will complete 65,536 times faster than the sequential one, even though they perform the same number of operations.
+
+N O T E Algorithms that become N times faster to attack when N cores are available are embarrassingly parallel; their execution times scale linearly with respect to the number of computing cores.
+
+Memory
+
+The second factor when determining the cost of an attack is memory. We evaluate cryptanalytic attacks with respect to their use of time and space: How many operations do they perform over time, how much memory or space do they consume, how do they use the space they consume, and what’s the speed of the available memory? Unfortunately, bit security focuses only on the time it takes to perform an attack.
+
+Concerning the way an attack uses space, it’s important to consider how many memory lookups the attack requires, the speed of memory accesses (which may differ between reads and writes), the size of the accessed data, the access pattern (contiguous or random memory addresses), and how it structures data in memory. For example, on a 2021 Intel Xeon 8380 Ice Lake processor, accessing a register takes 1 clock cycle, accessing the L1 cache (48kB) takes 5 cycles, accessing the L2 cache (1.25MB) takes 14 cycles, accessing the L3 cache (60MB) takes 63.5 cycles, and accessing DRAM is at best as fast but often much slower than accessing the L3 cache (the exact delay depends on several factors).
+
+Precomputation
+
+Precomputation operations need to be performed only once and can be reused over subsequent executions of the attack. We sometimes call precomputation the offline stage of an attack.
+
+Consider the time-memory trade-off attack, in which the attacker performs one huge computation that produces large lookup tables that we then store and reuse to perform the actual attack. For example, one attack on 2G mobile encryption took two months to build 2TB’s worth of tables, which attackers then used to break the encryption in 2G and recover a secret session key in only a few seconds.
+
+Number of Targets
+
+Finally, we come to the number of targets of the attack. The greater the number of targets, the greater the attack surface, and the more attackers can learn about the keys they’re after.
+
+For example, consider a brute-force key search: if you target a single n-bit key, it will take 2^n attempts to find the correct key with certainty. If you target multiple n-bit keys—say, a number M—and if for a single P you have M distinct ciphertexts, where C = E(K, P) for each of the M keys (K) that you’re after, it will again take 2^n attempts to find each key. But if you’re interested only in at least one of the M keys and not in every one, it would take on average 2^n/M attempts to succeed. For example, to break one 128-bit key of 2^16 = 65,536 target keys, it will take on average 2^128 − 16 = 2^112 evaluations of the cipher. That is, the cost (and speed) of the attack decreases as the number of targets increases.
+
+Choosing and Evaluating Security Levels
+
+Choosing a security level often involves selecting between the 128-bit and 256-bit security levels available in most standard crypto algorithms and implementations. You’ll find schemes with 64- or 80-bit security, but these are generally not secure enough for real-world use.
+
+At a high level, 128-bit security means you’d need to carry out approximately 2^128 operations to break that cryptosystem. To give you a sense of what this number means, consider the fact that the universe is approximately 2^88 nanoseconds old (there’s a billion nanoseconds in a second). Since testing a key with today’s technology takes no less than a nanosecond, you’d need several times the age of the universe for an attack to succeed (2^40 times, to be precise).
+
+But can’t parallelism and multiple targets dramatically reduce the time it takes to complete a successful attack? Not exactly. Say you’re interested in breaking any one of a million targets and that you have a million parallel cores available. That brings the search time down from 2^128 to (2^128 / 2^20) / 2^20 = 2^88, which is equivalent to “only” one universe lifetime.
+
+Another thing to consider when evaluating security levels is the evolution of technology. Moore’s law posits that computing efficiency doubles roughly every two years. We can think of this as a loss of 1 bit of security every two years: if today a $1,000 budget allows you to break, say, a 40-bit key in one hour, then Moore’s law says that two years later, you could break a 41-bit key in one hour for the same $1,000 budget (I’m simplifying). We can extrapolate from this to say that, according to Moore’s law, we’ll have 40 fewer bits of security in 80 years compared to today. In other words, in 80 years doing 2^128 operations may cost as much as doing 2^88 operations today. Accounting for parallelism and multiple targets, we’re down to 2^48 nanoseconds of computation, or about three days. But this extrapolation is highly inaccurate because Moore’s law won’t and can’t scale that much. Still, you get the idea: what looks infeasible today may be realistic in a century.
+
+There will be times when a security level lower than 128 bits is justified such as when you need security for a short time period and when the costs of implementing a higher security level will negatively impact the cost or usability of a system. An example is pay-TV systems, wherein encryption keys are either 48 or 64 bits. This sounds ridiculously low but is sufficient because the key refreshes every 5 or 10 seconds.
+
+Nevertheless, to ensure long-term security, you should choose 256-bit security or a bit less. Even in a worst-case scenario—the existence of quantum computers (see Chapter 14)—we’re unlikely to break a 256-bit secure scheme in the foreseeable future. More than 256 bits of security is practically unnecessary, except as a marketing device.
+
+As cryptographer John Kelsey once put it: “The difference between 80 bits and 128 bits of key search is like the difference between a mission to Mars and a mission to Alpha Centauri. As far as I can see, there is no meaningful difference between 192-bit and 256-bit keys in terms of practical brute-force attacks; impossible is impossible.”
+
+Achieving Security
+
+Once you’ve chosen a security level, it’s important to guarantee that your cryptographic schemes will stick to it. In other words, you want confidence, not just hope and uncertainty, that things will work as planned, all the time.
+
+When building confidence in the security of a crypto algorithm, you can rely on mathematical proofs, an approach we call provable security, or on evidence of failed attempts to break the algorithm, which I’ll call heuristic security (though it’s sometimes called probable security). These two approaches are complementary, and neither is better than the other, as you’ll see.
+
+Provable Security
+
+Provable security is about proving that breaking your crypto scheme is at least as hard as solving another problem known to be hard. Such a security proof guarantees that the crypto remains safe as long as the hard problem remains hard. This type of proof is called a reduction, and it comes from the field of complexity theory. We say problem X is reducible to breaking some cipher if any method to break the cipher also yields a method to solve problem X. Such a reduction guarantees that as long as problem X is hard, the cipher is secure.
+
+Security proofs come in two flavors, depending on the type of presumably hard problem you use: proofs relative to a mathematical problem and proofs relative to a cryptographic problem.
+
+Proofs Relative to a Mathematical Problem
+
+Many security proofs (such as those for public-key crypto) show that breaking a crypto scheme is at least as hard as solving some hard mathematical problem. We’re talking of problems for which we know a solution exists and is easy to verify once we know it but is computationally hard to find.
+
+N O T E There’s no real proof that seemingly hard math problems are actually hard. In fact, proving this for a specific class of problems is one of the greatest challenges in the field of complexity theory. As I write this, there is a $1,000,000 bounty for anyone who can prove this, awarded by the Clay Mathematics Institute. I discuss this in more detail in Chapter 9.
+
+For example, consider the challenge of solving the factoring problem, which is the best-known math problem in crypto: given a number that you know is the product of two prime numbers (n = pq), find the said primes. For example, if n = 15, the answer is 3 and 5. That’s easy for a small number, but it becomes exponentially harder as the size of the number grows. For example, if a number, n, is 3,000 bits long (about 900 decimal digits) or more, factoring is believed to be practically infeasible.
+
+Rivest-Shamir-Adleman (RSA) is the most famous crypto scheme to rely on the factoring problem: RSA encrypts a plaintext, P, seen as a large number, by computing C = P^e mod n, where the number e and n = pq are the public key. Decryption recovers a plaintext from a ciphertext by computing P = C^d mod n, where d is the private key associated with e and n. If we can factor n, then we can break RSA (by recovering the private key from the public key), and if we can obtain the private key, then we can factor n (for example, see the article at https://eprint.iacr.org/2004/208). In other words, recovering an RSA private key and factoring n are equivalently hard problems. That’s the kind of reduction we’re looking for in provable security. However, there is no guarantee that recovering an RSA plaintext is as hard as factoring n, since the knowledge of a plaintext doesn’t reveal the private key.
+
+Proofs Relative to Another Crypto Problem
+
+Instead of comparing a crypto scheme to a math problem, you can compare it to another crypto scheme and prove that you can break the second scheme only if you can break the first. Security proofs for symmetric ciphers usually follow this approach.
+
+For example, if all you have is a single permutation algorithm, then you can build symmetric ciphers, random bit generators, and other crypto objects such as hash functions by combining calls to the permutations with various types of inputs (as you’ll see in Chapter 6). Proofs then show that the newly created schemes are secure if the permutation is secure. In other words, we know that the newly created algorithm is not weaker than the original one. Such proofs usually work by crafting an attack on the smaller component, given an attack on the larger one—that is, by showing a reduction.
+
+When proving that a crypto algorithm is no weaker than another, the main benefit is that of a reduced attack surface: instead of analyzing both the core algorithm and the combination, you can simply look at the new cipher’s core algorithm. Specifically, if you write a cipher that uses a newly developed permutation and a new combination, you may prove that the combination doesn’t weaken security compared to the core algorithm. Therefore, to break the combination, you need to break the new permutation.
+
+Caveats
+
+Cryptography researchers rely heavily on security proofs, whether with respect to math problem schemes or to other crypto schemes. But the existence of a security proof doesn’t guarantee that a cryptographic scheme is perfect, nor is it an excuse for neglecting the more practical aspects of implementation. After all, as cryptographer Lars Knudsen once said, “If it’s provably secure, it’s probably not,” meaning that a security proof shouldn’t be taken as an absolute guarantee of security. Worse, there are multiple reasons why a “provably secure” scheme may lead to a security failure.
+
+One issue is with the phrase “proof of security” itself. In mathematics, a proof is the demonstration of an absolute truth, but in crypto, a proof is only the demonstration of a relative truth. For example, a proof that your cipher is as hard to break as it is to compute discrete logarithms—finding the number x given g and g^x mod n—guarantees that if your cipher fails, a whole lot of other ciphers will fail as well, and nobody will blame you if the worst happens.
+
+Another caveat is that one usually proves security with respect to a single notion of security. For example, you might prove that recovering the private key of a cipher is as hard as the factoring problem. But if you can recover plaintexts from ciphertext without the key, you’ll bypass the proof, and recovering the key hardly matters.
+
+Then again, proofs are not always correct, and it may be easier to break an algorithm than originally thought.
+
+N O T E Unfortunately, few researchers carefully check security proofs, which commonly span dozens of pages, thus complicating quality control. That said, demonstrating that a proof is incorrect doesn’t necessarily imply that the proof’s goal is completely wrong; if the result is correct, one may salvage the proof by correcting its errors.
+
+Another important consideration is that hard math problems sometimes turn out to be easier to solve than expected. For example, certain weak parameters make it easy to break the RSA cryptosystem. Or the math problem may be hard in certain cases but not on average, as often happens when the reference problem is new and not well understood. That’s what happened when the 1978 knapsack encryption scheme by Merkle and Hellman was later broken using lattice reduction techniques.
+
+Finally, although the proof of an algorithm’s security may be fine, the implementation of the algorithm can be weak. For example, attackers may exploit side-channel information such as power consumption or execution time to learn about an algorithm’s internal operations in order to break it, thus bypassing the proof. Or implementers may misuse the crypto scheme: if the algorithm is too complicated with too many knobs to configure, chances are higher that the user or developer will get a configuration wrong, which may render the algorithm completely insecure.
+
+Heuristic Security
+
+Provable security is a great tool to gain confidence in a crypto scheme, but it doesn’t apply to all kinds of algorithms. In fact, most symmetric ciphers don’t have a security proof. For example, every day we rely on AES to securely communicate using our mobile phones, laptops, and desktop computers, but AES is not provably secure; there’s no proof that it’s as hard to break as some well-known problem. AES can’t be related to a math problem or to another algorithm because it’s the hard problem itself.
+
+In cases where provable security doesn’t apply, the only reason to trust a cipher is because many skilled people tried to break it and failed. We call this heuristic security.
+
+When can we be sure that a cipher is secure? We can never be sure, but we can be pretty confident that an algorithm won’t be broken when hundreds of experienced cryptanalysts have each spent hundreds of hours trying to break it and published their findings—usually by attempting attacks on simplified versions of a cipher (often versions with fewer operations, or fewer rounds, which are short series of operations that ciphers iterate in order to mix bits together).
+
+When analyzing a new cipher, cryptanalysts first try to break one round, then two, three, or as many as they can. The security margin is then the difference between the total number of rounds and the number of successfully attacked rounds. After years of study, if a cipher’s security margin is still high, we become confident that it’s (probably) secure.
+
+Generating Keys
+
+If you plan to encrypt something, you’ll have to generate keys, whether they’re temporary “session keys” (like the ones generated when browsing an HTTPS site) or long-term public keys. Recall from Chapter 2 that secret keys are the crux of cryptographic security and should be randomly generated so that they are unpredictable and secret.
+
+For example, when you browse an HTTPS website, your browser receives the site’s public key and uses it to establish a symmetric key that’s valid only for the current session, and that site’s public key and its associated private key may be valid for years. Therefore, it’d better be hard for an attacker to find. But generating a secret key isn’t always as simple as dumping enough pseudorandom bits. We can generate cryptographic keys in one of three ways:
+• Randomly, using a PRNG feeding a key-generation algorithm
+• From a password, using a password-based key derivation function (PBKDF), which transforms the user-supplied password into a key
+• Through a key agreement protocol, which is a series of message exchanges between two or more parties that ends with the establishment of a shared key
+
+For now, I’ll explain the simplest method: randomized generation.
+
+Symmetric Keys
+
+Symmetric keys are secret keys shared by two parties, and they are the simplest to generate. They are usually the same length as the security level they provide: a 128-bit key provides 128-bit security, and any of the 2^128 possible keys is valid.
+
+To generate a symmetric key of n bits using a cryptographic PRNG, you simply ask it for n pseudorandom bits and use those bits as the key.
+
+That’s it. You can, for example, use the OpenSSL toolkit to generate a random symmetric key by dumping pseudorandom bytes, as in the following command:
+$ openssl rand -hex 16
+65a4400ea649d282b855bd2e246812c6
+
+Your result will, of course, differ from mine.
+
+Asymmetric Keys
+
+Unlike symmetric keys, asymmetric keys are usually longer than the security level they provide. But the main problem stems from asymmetric keys being trickier to generate than symmetric ones because you can’t dump n bits from your PRNG and get away with the result. Asymmetric keys aren’t just raw bit sequences. Instead, they represent a specific type of object, such as a large number with specific properties (in RSA, a product of two primes). A random bit string value (and thus a random number) is unlikely to have the necessary properties and therefore won’t be a valid key.
+
+To generate an asymmetric key, you send pseudorandom bits as a seed to a key-generation algorithm. This algorithm takes as input a seed value that’s at least as long as the intended security level and constructs from it a private key and its respective public key, ensuring that both satisfy the necessary criteria. For example, a naive key-generation algorithm for RSA would generate a number, n = pq, by using an algorithm to generate two random primes of about the same length. That algorithm would pick random numbers until one happens to be prime, so you’d also need an algorithm to test whether a number is prime.
+
+To save yourself the burden of manually implementing the key-generation algorithm, you can use OpenSSL to generate a 4,096-bit RSA private key, like this:
+$ openssl genrsa 4096
+Generating RSA private key, 4096 bit long modulus (2 primes)
+..............................................................................
+...............................++
+...............................................++
+e is 65537 (0x10001)
+- - - - - BEGIN RSA PRIVATE KEY- - - - -
+MIIJKQIBAAKCAgEA3Qgm6OjMy61YVstaGawk22A9LyMXhiQUU4N8F5QZXEef2Pjq
+vTtAIA1hzpK2AJsv16INpNkYcTjNmechAJ0xHraftO6cp2pZFP85dvknsMfUoe8u
+btKXZiYvJwpS0fQQ4tzlDtH45Gj8sMHcwFxTO3HSIx0XV0owfJTLMzZbSE3TDlN+
+JdW8d9Xd5UVB+o9gUCI8tSfnOjF2dHlLNiOhlfT4w0Rf+G35USIyUJZtOQ0Dh8M+
+- - snip- -
+zO/dbYtqRkMT8Ubb/0Q1IW0q8e0WnFetzkwPzAIjwZGXT0kWJu3RYj1OXbTYDr2c
+xBRVC/ujoDL6O3NaqPxkWY5HJVmkyKIE5pC04RFNyaQ8+o4APyobabPMylQq5Vo5
+N5L2c4mhy1/OH8fvKBRDuvCk2oZinjdoKUo8ZA5DOa4pdvIQfR+b4/4Jjsx4
+- - - - - END RSA PRIVATE KEY- - - - -
+
+Notice that the key comes in a specific format—namely, base64-encoded data between the BEGIN RSA PRIVATE KEY and END RSA PRIVATE KEY markers. That’s a standard encoding format that most systems support and can convert to raw bytes of data. The dot sequences at the beginning are a kind of progress bar, and e is 65537 (0x10001) indicates the parameter to use when encrypting (remember that RSA encrypts by computing C = P^e mod n).
+
+Protecting Keys
+
+Once you have a secret key, you need to keep it secret yet available when you need it. There are three ways to address this problem:
+
+Key wrapping (encrypting the key using a second key)
+
+The problem with this approach is that the second key must be available when you need to decrypt the protected key. In practice, this second key is often generated from a password the user supplies when they need to use the protected key. That’s how private keys for the Secure Shell (SSH) protocol are usually protected.
+
+On-the-fly generation from a password
+
+This doesn’t require storing an encrypted file because the key comes straight out from the password. Systems like cryptocurrency wallets and password managers often use this method.
+
+Although this method is more direct than key wrapping, it’s less widespread, in part because it’s more vulnerable to weak passwords. Say, for example, that an attacker captured some encrypted message: if we used key wrapping, the attacker first needs to get the protected key file, which may be stored locally on the user’s file system or in a key management system (KMS), and therefore is not easy to access. But if we used on-the-fly generation, the attacker can directly search for the correct password by attempting to decrypt the encrypted message with candidate passwords. And if the password is weak, the key is compromised.
+
+Storing the key on a hardware token (smart card or USB dongle)
+
+In this approach, we store the key in secure memory, and it remains safe even if the computer is compromised. This is the safest approach to key storage but also the costliest and least convenient because it requires you to carry the hardware token with you and run the risk of losing it. Smart cards and USB dongles usually require you to enter a password to unlock the key from the secure memory.
+
+N O T E Whatever method you use, make sure not to mistake the private key for the public one when exchanging keys, and don’t accidentally publish the private key through email or source code. (I’ve actually found private keys on GitHub.)
+
+To test key wrapping, run the following OpenSSL command with the argument -aes128 to tell OpenSSL to encrypt the key with the cipher AES-128 (AES with a 128-bit key):
+$ openssl genrsa -aes128 4096
+Generating RSA private key, 4096 bit long modulus (2 primes)
+..........++
+..............................................................................
+...............................................++
+e is 65537 (0x10001)
+Enter pass phrase:
+OpenSSL will use the requested passphrase to encrypt the newly created key.
+
+How Things Can Go Wrong
+
+Cryptographic security can go wrong in many ways. The biggest risk is when you have a false sense of security due to security proofs or well-studied protocols, as the following examples illustrate.
+
+Incorrect Security Proof
+
+Even proofs of security by renowned researchers may be wrong. One of the most striking examples of a proof gone terribly wrong is that of Optimal Asymmetric Encryption Padding (OAEP), a method of secure encryption that used RSA and was implemented in many applications. An incorrect proof of OAEP’s security against chosen-ciphertext attackers was accepted as valid for seven years, until a researcher found a flaw in 2001. Not only was the proof wrong, but the result was wrong as well. A new proof later showed that OAEP is only almost secure against chosen-ciphertext attackers. We now have to trust the new proof and hope that it’s flawless. (For further details, see the 2001 paper “OAEP Reconsidered” by Victor Shoup.)
+
+Short Keys for Legacy Support
+
+In 2015, researchers found that some HTTPS sites and SSH servers supported public-key cryptography with shorter keys than expected—namely, 512 bits instead of at least 2,048 bits. Remember, with public-key schemes, the security level isn’t equal to the key size, and in the case of HTTPS, keys of 512 bits offer a security level of approximately 60 bits. These keys could be broken after only about two weeks of computation using a cluster of 72 processors. This affected many websites, including the website of the US Federal Bureau of Investigation (FBI). Although the software was ultimately fixed (thanks to patches for

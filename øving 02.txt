@@ -1,0 +1,115 @@
+Exercises 02; Fundamentals – Cryptographic Security
+0. Read chapter 3 “Cryptographic Security” pages 43-53. It is part of the curriculum.
+    ✅
+
+1. Can a real-life cipher have “unconditional security”? (explain)
+    Yes, but that doesnt mean its a good cipher. 
+
+2. What is a “computational Security”? (explain)
+    Computational security is "can it be broken in a reasonable amount of time with reasonable resources?"
+
+3. What is a (P,C)-pair? (explain)
+    Plaintext Ciphertext pair. The text before and after encrypted with a cipher.
+
+4. What is this: (t, ε)-secure?
+        Mathematical expression of computational security. Book: A cryptographic scheme is (t, ε)-secure if an attacker performing at most t operations has a probability of success that is no higher than ε
+    a. What is the t?
+        the limit on the number of operations that an attacker will carry out
+    b. What is the ε?
+        the limit on the probability of success of an attack
+
+5. Assume a key length of n=128-bit. Assume also that t=2^64. Is the cipher still secure? (explain)
+    Yes, 2^64 is 1.8446744e+19 while 2^128 (the keyspace) is 3.4028237e+38, which is a way bigger number. 
+    The chance of guessing the key correctly by brute force is 2^64 / 2^128 = 2^-64
+
+6. Assume a key length of n=128-bit.
+    a. Is is OK to say that the “security level” is 128-bit? (why/why not)
+        Depends on the process to generate the key is exploitable or not. If its exploitable in some way, the security level may be lower-
+    b. Can the security level be greater than the key length (in bits)? (why/why not)
+        If the security level is expressed in relative terms, yes. For example, key A and key B. If key B requires more resources to try each key, you can quantify that as a higher security level relative to key A. 
+        Copy paste from LLM:
+            Suppose Cipher B takes 100 times longer per operation than Cipher A.
+                2^128 B-operations.
+            Since each B-operation costs the same as 100 A-operations.
+                100×2^128
+            Express 100 as a power of 2.
+                100≈2^6.64
+            And when multiplying powers of 2, you add the exponents:
+                2^6.64+128 = 2^134.64
+            So if we're measuring everything using Cipher A's operations:
+                Cipher A attack ≈ 2^128 A-operations
+                Cipher B attack ≈ 2^134.64 A-operations
+
+7. The Hive Systems password table says a lot about the effect of parallelization:
+    a. Do you have a “safe” password?
+        Yes, my regular password puts me well into the green. My old password is orange. 
+
+8. Precomputation
+    a. Precomputation is (in large parts) a brute-force approach (true/false – explain)
+        You can precompute outcomes before starting the attack and then look up the answers later. Its a brute force attack but just earlier in time.
+    b. How does it differ from a standard brute-force approach? (explain, or refute the claim)
+        Its similar in that its fundamentally trying lots of options. Its effectively trading storage space for time (during an attack).
+
+9. Sensible security level?
+    a. Why is 56, 64 or 80-bit security level considered insecure? (explain)
+            They can be broken "relatively" easily by powerful computers.
+        i. Are there any exceptions to the above?
+            Yes, if the key expires quickly, the attacker wont have enough time to break the key before its invalid again.
+    b. Why is 128-bit security level enough? (explain)
+        2^128 is an insanely large number. 
+        From the book:  To give you a sense of what this number means, consider the fact that the universe is approximately 288 nanoseconds old (there’s a billion nanoseconds in a second). 
+                        Since testing a key with today’s technology takes no less than a nanosecond, you’d need several times the age of the universe for an attack to succeed (240 times, to be precise).
+    c. What is the point of 256-bit security level? (explain)
+        For future proofing. Currently we do not expect to be able to break 256 bit security for the forseeable future, even with quantum computing.
+    d. Ok, but we can also imagine a 512-bit security level:
+        i. Would this be useful and/or necessary? (explain)
+                No, its incredibly overkill. 
+            ii. What would be the drawbacks to this? (explain)
+                Takes more resources to compute and deliver (cpu cycles, storage space, bandwidth, etc).
+
+10. What is a “reduction” proof and how does it work (explain).
+    A reduction proof is basically you saying "the only way to break my cipher is to solve this existing problem first and we are pretty sure the existing one is hard". 
+    Its like piggybacking off an existing problem.
+
+11. Mention at least one example of proofs relative to a mathematical problem.
+    RSA uses the prime factoring problem. Finding the two primes that factor into a certain number gets really hard, and since RSA uses that, its at least as hard to compute as the prime factoring problem.
+
+12. How hard is the baseline mathematical problem for RSA?
+    If n is large enough, hard enough to be considered infeasable. 
+
+13. What is a proof relative to a(nother) cryptographic problem?
+        "the only way to break my cipher is to solve this existing cryptographic problem first and we are pretty sure the existing one is hard"
+    a. Give an example
+        If the encryption algorithm uses RSA, i can say that you need to break RSA to break my algorithm as well.
+
+14. AES is one of the most widely used cipher algorithm in the world today.
+    a. Are there any proofs for AES? (explain)
+        No. We are pretty sure AES is secure becuase many skilled people have tried and failed to break it.
+        This is called heuristic security. The ones above are called provable Security.
+
+15. What is a TVP? (explain)
+    There is nothing in the book about this and nothing seems correct on google.
+    Im going to guess something related to timestamps. Can be useful to set when a key will expire or as a seed of some sort. It can also be useful for both parties to know when x thing will happen.
+
+16. If you need uniqueness, which TVP type is adequate? (explain)
+    There is nothing in the book about this and nothing seems correct on google.
+    The unix time counts up from the unix epoch. Its always going to be unique.
+
+17. Timestamps have advantages, but they also have disadvantages. Can you elucidate on both the advantages and disadvantages?
+    They are guaranteed unique and fresh by each second (or ms depending on who you ask), and very easy to retrieve. 
+    But they are extremely predictable and rely on both parties having a clock that works and is correct.  
+
+18. What is a sufficient key-length for symmetric ciphers? (explain)
+    Today 128 bit is fine, but if you want future proofing you can use 256 bit.
+
+19. Why should you never use the same key for different algorithms? (explain)
+    If one of the algorithms is broken, you would be able to retrieve the key from one and use that to decrypt the message in the other one.
+
+20. What is a key-deriving key? (explain)
+    A key that was created (derived) using a key.
+
+21. How long should a key-deriving key be? (explain)
+
+22. What is meant by “lifetime” for keys?
+
+23. Can the lifetime concept capture more than “time”? (explain)

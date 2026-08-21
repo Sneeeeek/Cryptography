@@ -1,0 +1,202 @@
+A Safer Way to Use /dev/urandom
+
+Listing 2-2, copied from the LibreSSL library, shows a safer way to use /dev/urandom.
+
+int random_bytes_safer(void *buf, size_t len)
+{
+struct stat st;
+size_t i;
+int fd, cnt, flags;
+int save_errno = errno;
+start:
+flags = O_RDONLY;
+#ifdef O_NOFOLLOW
+flags |= O_NOFOLLOW;
+#endif
+#ifdef O_CLOEXEC
+flags |= O_CLOEXEC;
+#endif
+fd = open("/dev/urandom", flags, 0);
+if (fd == -1) {
+if (errno == EINTR)
+goto start;
+goto nodevrandom;
+}
+#ifndef O_CLOEXEC
+fcntl(fd, F_SETFD, fcntl(fd, F_GETFD) | FD_CLOEXEC);
+#endif
+/* Lightly verify that the device node looks sane. */
+if (fstat(fd, &st) == -1 || !S_ISCHR(st.st_mode)) {
+close(fd);
+goto nodevrandom;
+}
+if (ioctl(fd, RNDGETENTCNT, &cnt) == -1) {
+close(fd);
+goto nodevrandom;
+}
+for (i = 0; i < len; ) {
+size_t wanted = len - i;
+ssize_t ret = read(fd, (char *)buf + i, wanted);
+if (ret == -1) {
+if (errno == EAGAIN || errno == EINTR)
+continue;
+close(fd);
+goto nodevrandom;
+}
+i += ret;
+}
+close(fd);
+if (gotdata(buf, len) == 0) {
+errno = save_errno;
+return 0; /* Satisfied */
+}
+nodevrandom:
+errno = EIO;
+return -1;
+}
+
+Listing 2-2: A safe use of /dev/urandom
+
+Unlike Listing 2-1, Listing 2-2 makes several sanity checks. Compare, for example, the calls to open() and to read() with those in Listing 2-1: the safer code checks the return values of those functions and upon failure closes the file descriptor and returns –1.
+
+Differences Between /dev/urandom and /dev/random, Before 2022
+
+The Linux PRNG, defined in drivers/char/random.c in the Linux kernel, underwent major changes in 2022 (since kernel version 5.17).
+
+First, the general structure of the PRNG, which is similar in the old and new versions, is based on a collection of entropy from various sources (including system activity, such as keyboard, mouse, and disk accesses), as well as from an entropy pool that can be seen as a large array, which is filled by hashing data collected from the entropy sources. Next, a DRBG is responsible for producing the pseudorandom data streams returned when /dev/random or /dev/urandom is read or when the getrandom() system call is made.
+
+Historically, prior to kernel version 5.17, the Linux PRNG behaved as follows: unlike /dev/urandom, the /dev/random interface was blocking; if the kernel estimated that the PRNG had an insufficient level of entropy, then /dev/random would stop returning bytes (“block”) when it was read, until a sufficient level of entropy was estimated by the kernel. This was not a good idea. For one thing, entropy estimators are notoriously unreliable and can be fooled by attackers (which is one reason why Fortuna ditched Yarrow’s entropy estimation). Furthermore, /dev/random ran out of estimated entropy pretty quickly, which could produce a denial-of-service condition, slowing applications that were forced to wait for more entropy. The upshot is that in practice, /dev/random was no better than /dev/urandom and created more problems than it solved.
+
+Differences Between /dev/urandom and /dev/random, Since 2022
+
+In versions of the Linux kernel from 2022 (5.17 onward), several improvements have been incorporated. First, the SHA-1 hash function has been replaced by BLAKE2 when creating the contents of the pool. The biggest change is the modification of the relative behavior of /dev/random and /dev/urandom; it has even been proposed to eliminate their differences altogether. At the time of writing, on most platforms both interfaces will detect if there isn’t enough entropy, but /dev/urandom will resume producing pseudorandom bits if the kernel fails to collect enough entropy, whereas /dev/random will block.
+
+In addition, the kernel’s entropy estimation logic has been greatly improved: instead of considering that entropy decreases when PRNG bits are read (a cryptographic nonsense), the kernel just looks for the point when enough uncertainty (that is, entropy) has been collected—for example, at system startup.
+
+You can read the entropy value of a Linux system in the /proc/sys/kernel/random/entropy_avail file. In older versions of the kernel, this value was a maximum of 4,096 bits and decreased with the generation of PRNG bits. In the new kernels, the value is capped at 256 bits and therefore no longer decreases.
+
+The CryptGenRandom() Function in Windows
+
+In Windows, the legacy userland interface to the system’s PRNG is the CryptGenRandom() function from the Cryptography application programming interface (API). Recent Windows versions replace the CryptGenRandom() function with the BcryptGenRandom() function in the Cryptography API: Next Generation (CNG). The Windows PRNG takes entropy from the kernel mode driver cng.sys (formerly ksecdd.sys), whose entropy collector is loosely based on Fortuna. As is usually the case in Windows, the process is complicated.
+
+Listing 2-3 shows a typical C++ invocation of CryptGenRandom() with the required checks.
+
+int random_bytes(unsigned char *out, size_t outlen)
+{
+static HCRYPTPROV handle = 0; /* Only freed when the program ends */
+if(!handle) {
+if(!CryptAcquireContext(&handle, 0, 0, PROV_RSA_FULL,
+CRYPT_VERIFYCONTEXT | CRYPT_SILENT)) {
+return -1;
+}
+}
+while(outlen > 0) {
+const DWORD len = outlen > 1048576UL ? 1048576UL : outlen;
+if(!CryptGenRandom(handle, len, out)) {
+return -2;
+}
+out += len;
+outlen -= len;
+}
+return 0;
+}
+
+Listing 2-3: Using the Windows CryptGenRandom() PRNG interface
+
+Prior to calling the actual PRNG, you need to declare a cryptographic service provider (HCRYPTPROV) and then acquire a cryptographic context with CryptAcquireContext(), which increases the likelihood that things will go wrong. For instance, the final version of the TrueCrypt encryption software was found to call CryptAcquireContext() in a way that could silently fail, leading to suboptimal randomness without notifying the user. Fortunately, the newer and simpler BCryptGenRandom() interface for Windows doesn’t require the code to explicitly open a handle (or at least makes it much easier to use without a handle).
+
+A Hardware-Based PRNG: Intel Secure Key
+
+We’ve discussed only software PRNGs so far, so let’s take a look at a hardware one. The Intel Digital Random Number Generator, or Intel Secure Key, is a hardware PRNG introduced in 2012 in Intel’s Ivy Bridge microarchitecture. It’s based on NIST’s SP 800-90 guidelines with the Advanced Encryption Standard (AES) in CTR_DRBG mode. Intel’s PRNG is accessed through the RDRAND assembly instruction, which offers an interface independent of the operating system and is in principle faster than software PRNGs.
+
+Whereas software PRNGs try to collect entropy from unpredictable sources, Intel Secure Key has a single entropy source that provides a serial stream of entropy data as zeros and ones. In hardware engineering terms, this entropy source is a dual differential jamb latch with feedback—essentially, a small hardware circuit that jumps between two states (0 or 1) depending on thermal noise fluctuations, at a frequency of 3 GHz. This is usually pretty reliable.
+
+The RDRAND assembly instruction takes as an argument a register of 16, 32, or 64 bits and then writes a random value. When invoked, RDRAND sets the carry flag to 1 if the data set in the destination register is a valid random value, and to 0 otherwise; be sure to check the CF flag if you write assembly code directly. Note that the C intrinsics available in common compilers don’t check the CF flag but do return its value.
+
+NOTE Intel’s PRNG framework provides an assembly instruction other than RDRAND: the RDSEED assembly instruction returns random bits directly from the entropy source, after some conditioning or cryptographic processing. It’s intended to be able to seed other PRNGs.
+
+Intel Secure Key is only partially documented, but it’s built on known standards and has been audited by the well-regarded company Cryptography Research (see its report titled “Analysis of Intel’s Ivy Bridge Digital Random Number Generator”). Nonetheless, there have been some concerns about its security, especially following Edward Snowden’s revelations about cryptographic backdoors: PRNGs are indeed the perfect target for sabotage. If you’re concerned but still want to use RDRAND or RDSEED, mix them with other entropy sources. Doing so will prevent effective exploitation of a hypothetical backdoor in Intel Secure Key’s hardware or in the associated microcode in all but the most far-fetched scenarios.
+
+How Things Can Go Wrong
+
+To conclude, I’ll present a few examples of randomness failures. There are countless examples to choose from, but I’ve chosen four that are simple enough to understand and illustrate different problems.
+
+Poor Entropy Sources
+
+In 1996, the SSL implementation of the Netscape browser was computing 128-bit PRNG seeds according to the pseudocode shown in Listing 2-4, copied from Goldberg and Wagner’s page at https://www.cs.berkeley.edu/~daw/papers/ddj-netscape.html.
+
+global variable seed;
+RNG_CreateContext()
+(seconds, microseconds) = time of day; /* Time elapsed since 1970 */
+pid = process ID; ppid = parent process ID;
+a = mklcpr(microseconds);
+b = mklcpr(pid + seconds + (ppid << 12));
+seed = MD5(a, b); /* Derivation of a 128-bit value using the hash MD5 */
+mklcpr(x) /* Not cryptographically significant; shown for completeness */
+return ((0xDEECE66D * x + 0x2BBB62DC) >> 1);
+MD5() /* A very good standard mixing function, source omitted */
+
+Listing 2-4: Pseudocode of the Netscape browser’s generation of 128-bit PRNG seeds
+
+The problem here is that the PIDs and microseconds are guessable values. Assuming that you can guess the value of seconds, microseconds has only 106 possible values and thus an entropy of log(106), or about 20 bits. The process ID (PID) and parent process ID (PPID) are 15-bit values, so you’d expect 15 + 15 = 30 additional entropy bits. But looking at how b is computed shows that the overlap of 3 bits yields an entropy of about 15 + 12 = 27 bits, for a total entropy of only 47 bits, whereas a 128-bit seed should have 128 bits of entropy.
+
+Insufficient Entropy at Boot Time
+
+In 2012, researchers scanned the internet and harvested public keys from TLS certificates and SSH hosts. They found that a handful of systems had identical public keys, and in some cases very similar keys (namely, RSA keys with shared prime factors)—in short, two numbers, n = pq and n′ = p′q′, with p = p′, whereas normally all ps and qs should be different in distinct modulus values.
+
+It turned out that many devices generated their public key early, at first boot, before having collected enough entropy, despite using an otherwise-decent PRNG (typically /dev/urandom). PRNGs in different systems produced identical random bits due to having the same entropy source (for example, a hardcoded seed).
+
+At a high level, the presence of identical keys is due to key-generation schemes like the following, in pseudocode:
+prng.seed(seed)
+p = prng.generate_random_prime()
+q = prng.generate_random_prime()
+n = p*q
+
+If two systems run this code given an identical seed, they’ll produce the same p, the same q, and therefore the same n.
+
+The presence of shared primes in different keys is due to key-generation schemes where additional entropy is injected during the process, as demonstrated here:
+prng.seed(seed)
+p = prng.generate_random_prime()
+prng.add_entropy()
+q = prng.generate_random_prime()
+n = p*q
+
+If two systems run this code with the same seed, they’ll produce the same p, but the injection of entropy through prng.add_entropy() will ensure distinct qs.
+
+The problem with shared prime factors is that given n = pq and n′ = pq′, it’s trivial to recover the shared p by computing the greatest common divisor (GCD) of n and n′. For details, see the paper “Mining Your Ps and Qs” by Heninger, Durumeric, Wustrow, and Halderman, available at https://factorable.net.
+
+Noncryptographic PRNG
+
+Earlier we discussed the difference between crypto and noncrypto PRNGs and why the latter should never be used for crypto applications. Alas, many systems overlook that detail, so we’ll look at one such example.
+
+The popular MediaWiki application runs on Wikipedia and many other wikis. It uses randomness to generate things like security tokens and temporary passwords, which should be unpredictable. Unfortunately, a now obsolete version of MediaWiki used a noncrypto PRNG, the Mersenne Twister, to generate these tokens and passwords. Here’s a snippet from the vulnerable MediaWiki source code; look for the function called to get a random bit, and read the comments:
+
+/**
+* Generate a hex-y looking random token for various uses.
+* Could be made more cryptographically sure if someone cares.
+* @return string
+*/
+function generateToken( $salt = '' ) {
+$token = dechex(mt_rand()).dechex(mt_rand());
+return md5( $token . $salt );
+}
+
+Did you notice mt_rand() in the preceding code? Here, mt stands for Mersenne Twister. In 2012, researchers showed how to exploit the predictability of Mersenne Twister to predict future tokens and temporary passwords, given a couple of security tokens. MediaWiki was patched to use a crypto PRNG.
+
+Sampling Bug with Strong Randomness
+
+The next bug shows how even a strong crypto PRNG with sufficient entropy can produce a biased distribution. The chat program Cryptocat was designed to offer secure communication. It used a function that attempted to create a uniformly distributed string of decimal digits—namely, numbers in the range 0 through 9. However, just taking random bytes modulo 10 doesn’t yield a uniform distribution; when taking all numbers between 0 and 255 and reducing them modulo 10, you don’t get an equal number of values in 0 to 9.
+
+Cryptocat did the following to address that problem and obtain a uniform distribution:
+Cryptocat.random = function() {
+var x, o = '';
+while (o.length < 16) {
+x = state.getBytes(1);
+if (x[0] <= 250) {
+o += x[0] % 10;
+}
+}
+return parseFloat('0.' + o)
+}
+
+And that was almost perfect. By taking only the numbers up to a multiple of 10 and discarding others, you’d expect a uniform distribution of the digits 0 through 9. Unfortunately, there was an off-by-one error in the if condition. I’ll leave the details to you as an exercise. You should find that there is a small statistical bias in favor of the index 0 (hint: <= should have been <).
