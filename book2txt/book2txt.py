@@ -1,5 +1,11 @@
 from openai import OpenAI
-client = OpenAI(api_key="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")
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+openAI_key = os.getenv("API_KEY")
+
+client = OpenAI(api_key=openAI_key)
 
 with open("book2txt/text.txt", "r", encoding="utf-8") as f:
     text = f.read()

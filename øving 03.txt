@@ -1,0 +1,114 @@
+Exercise 03: Hash and MAC function
+
+0. What is cryptographic hash function?
+    A cryptographic hash function is a one way function that creates (maps) a fixed lenght output (a hash) from a given input (any lenght).
+
+1. Test these hashes (search with google). What hash algorithm was used here
+    a. 5f4dcc3b5aa765d61d8327deb882cf99
+        MD5 - password
+    b. d41d8cd98f00b204e9800998ecf8427e
+        MD5 - azerty
+    c. 6384e2b2184bcbf58eccf10ca7a6563c
+        MD5 - alice
+
+2. What is the avalanche effect?
+    If a bit is changed in the plaintext, at least 50% of the ciphertext should be different.
+
+3. Modify the md5_avalance.py file to use sha-256 and verify that you get avalanche effects.
+    Average bitdistance was:  122.5
+
+4. Is a “fingerprint” and a “digest” the same thing?
+
+5. What is the preimage and image?
+
+6. What is a collision?
+    When two separate things result in the same hash.
+
+7. Are collisions always dangerous? (Why/why not)
+
+8. What is a 2nd preimage, and why should it be hard to find it?
+
+9. BirthdayParadox.py: Play around and check how difficult it is to find a specific birth date vs to find two matching birthdates
+
+10. What does it mean that it should be computationally infeasible to find the preimage of a hash output?
+
+11. Read chapter 6 in the book
+
+12. There are two flavors of iterative hashing – which are they?
+
+13. Who was Merkel and Damgård?
+
+14. What is a “compression function”? (What does it do?)
+
+15. For a M-D hash, what are the normal block sizes?
+
+16. Explain what the padding would be for a 512-bit block M-D construction, where you have 12 “leftover” bits (“0110 1100 0001”).
+
+17. What is the Davies-Meyer construction? What does it do?
+
+18. What is a permutation-based hash function? (mention at least one example)
+
+19. Does a permutation-based hash have a compression function? (why/why not)
+
+20. What is the point of the “sponge” part of a permutation-based hash?
+
+21. What is the “sponge capacity”? (and how is it related to the security level?)
+
+22. What is the collision complexity of a sponge-based hash function?
+
+23. What was the digest size from SHA-1?
+
+24. Why was SHA-1 deprecated? (And, when must it be removed according to NIST?) -- https://www.nist.gov/news-events/news/2022/12/nist-retires-sha-1-cryptographic-algorithm
+
+25. The main browser developers were a bit faster to react (https://security.googleblog.com/2014/09/gradually-sunsetting-sha-1.html)* 
+
+    *Effectively, Mozilla, Apple, Google and Microsoft cooperate and coordinate on these matters, so it applies to most browsers. See https://cabforum.org/ for more info on this cooperation.
+
+When did they start to phase out SHA-1?
+
+26. Is SHA-3 much used (why/why not)?
+
+27. What is the purpose of a Memory Hard Function (MHF)? (look it up)
+
+28. hash_proof-of-work.py: Modify the program to test out PoW with sha-256 and sha-512. How much harder was it to compute the leading zeros? Use the timing() function if you want, and modify the number of zeros to get reliable data (LEADING_ZEROS)
+
+29. sha256filecheck.py: Find some suitable target files and generate the associated sha255 files, then check that it matches the associated sha256 file. Suggested target file: notepad++
+
+30. MAC functions differ from hash functions. What is the main difference?
+
+31. What is an “icv”?
+
+32. Why was CMAC constructed?
+
+33. Should you use CMAC in new systems today (why/why not)?
+
+34. Check out that the method used in breaking_cbc_mac.py also applies to other messages than those in the file. For sake of simplicity, use single-block message (the extension attack actually works of multiple blocks too).
+
+35. Is it easy to exploit the CBC-MAC extension attack for practical use?
+
+36. CMAC is considered a safe construct, but it isn’t the most used type of construct for creating a MAC. 
+    Which is the most used construct?
+
+37. HMAC-SHA256 is used as a KDF for deriving the key hierarchies in 4G and 5G mobile systems, but the construct was first specified in a 3G specification. In which specification was the construct used?
+
+38. Why is the HMAC-SHA256 construct a good choice for a KDF?
+
+39. Do you know about any current product that relies upon or using MD5 or SHA-1?
+
+40. What arguments are there for choosing BLAKE2/BLAKE3?
+
+41. What is a Universal Hash (UH) function?
+
+42. Is a UH function secure?
+
+43. What is the main advantage of a UH function?
+
+44. Who are Wegman and Carter?
+
+45. What is the point of the Wegman-Carter (W-C) construction?
+
+46. How may the “PRF” part of the W-C construction be implemented?
+
+47. Read chapter 7 in the book
+
+48. Did you learn anything today? (If so, what did you learn)

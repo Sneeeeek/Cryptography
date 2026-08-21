@@ -106,10 +106,14 @@ Exercises 02; Fundamentals – Cryptographic Security
     If one of the algorithms is broken, you would be able to retrieve the key from one and use that to decrypt the message in the other one.
 
 20. What is a key-deriving key? (explain)
-    A key that was created (derived) using a key.
+    A key that was created (derived) using a key. So like imagine you use a password to generate a new key that will be used to encrypt stuff with. 
 
 21. How long should a key-deriving key be? (explain)
+    The weakest link in a key-deriving key process is the base key (the password if continuing he example before). 
+    The user should take care to have a long and complex enough password that it wont be brute forced. Hive Systems password table.
 
 22. What is meant by “lifetime” for keys?
+    The period during which a key is valid. When it expires, it wont be accepted anymore.
 
 23. Can the lifetime concept capture more than “time”? (explain)
+    Yes, you could have number of uses for example. 
