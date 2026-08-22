@@ -18,31 +18,47 @@ Exercise 03: Hash and MAC function
     Average bitdistance was:  122.5
 
 4. Is a “fingerprint” and a “digest” the same thing?
+    Yes, they both refer to the output of a hash algorithm.
 
 5. What is the preimage and image?
+    Preimage is the input, the data before being hashed.
+    Image is the output, data after being hashed.
 
 6. What is a collision?
     When two separate things result in the same hash.
 
 7. Are collisions always dangerous? (Why/why not)
+    Not neccesarily. Its only dangerous when the hash is being used for security. 
 
 8. What is a 2nd preimage, and why should it be hard to find it?
+    A second preimage is a different input that produces the same hash.
 
 9. BirthdayParadox.py: Play around and check how difficult it is to find a specific birth date vs to find two matching birthdates
+    ✅
 
 10. What does it mean that it should be computationally infeasible to find the preimage of a hash output?
+    To construct a preimage should be difficult enough that the computation time would be too long. 
 
 11. Read chapter 6 in the book
 
 12. There are two flavors of iterative hashing – which are they?
+    Compression -> Transforms input into a smaller output.
+    Permutation -> Transforms input into a same sized output (called sponge function.)
 
-13. Who was Merkel and Damgård?
+13. Who was Merkle and Damgård?
+    Ralph C. Merkle is an american computer scientist and mathematician. He described the Merkle–Damgård construction in 1979. 
+    Ivan Bjerre Damgård is a danish cryptographer. 
+    The two independently came up with the idea for the construction.
 
 14. What is a “compression function”? (What does it do?)
+    A compression function takes in the current has + the next block of data and outputs it to a new hash (fixed size).
 
 15. For a M-D hash, what are the normal block sizes?
+    Depends on the implementation, but can be any size.
+    MD5, SHA-1, and SHA-256 use 512 bits.
 
 16. Explain what the padding would be for a 512-bit block M-D construction, where you have 12 “leftover” bits (“0110 1100 0001”).
+    [12 leftover bits] 1 000000...000 [The lenght of the entire message described as a 64-bit number]
 
 17. What is the Davies-Meyer construction? What does it do?
 
