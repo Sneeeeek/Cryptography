@@ -61,40 +61,73 @@ Exercise 03: Hash and MAC function
     [12 leftover bits] 1 000000...000 [The lenght of the entire message described as a 64-bit number]
 
 17. What is the Davies-Meyer construction? What does it do?
+    The Davies-Meyer construction is a compression function that looks like this: new hash = encrypt(previous hash, message block) XOR previous hash.
 
 18. What is a permutation-based hash function? (mention at least one example)
+    A hash that builds its compression using a permutation.
+    Example: Keccak, which is used in SHA-3.
 
 19. Does a permutation-based hash have a compression function? (why/why not)
+    Yes. The permutation hash takes state + next block and turns that into the next state, which will be a fixed size. 
+    This is effectively compressing the input into the fixed size if its larger.
 
 20. What is the point of the “sponge” part of a permutation-based hash?
+    The sponge is flexible. It "absorbs" by taking messages into the rate, which is then mixed with the capcaity using the permutation function, resulting in the rate being mixed into the capacity.
+    The capcity cant be affected by the outside except via the rate, sort of like an API.
+    Later, you can "squeeze" by retrieving the first however many bits. You can retrieve an arbitrary lenght of hash value from it.
 
 21. What is the “sponge capacity”? (and how is it related to the security level?)
+    The rate is much smaller than the capacity, but when the algorithm is run, the rate is mixed into the capacity.
+    Its like a security buffer.
+    The security level is capacity/2.
+    From the book:
+        The value of c is a sponge’s capacity, and the security level guaranteed by the sponge function is c/2. 
+        To reach 256-bit security with 64-bit message blocks, the internal state should be at least (Internal state =  64 + (2 × 256) = 576 bits) long.
 
 22. What is the collision complexity of a sponge-based hash function?
+    From the book:
+        The complexity of a collision attack is the smallest value between 2^n/2 and 2^c/2.
 
 23. What was the digest size from SHA-1?
+    160 bit.
 
 24. Why was SHA-1 deprecated? (And, when must it be removed according to NIST?) -- https://www.nist.gov/news-events/news/2022/12/nist-retires-sha-1-cryptographic-algorithm
+    Not hard enough to find collisions.
+    Disallowed its use for digital signatures in 2013, should be phased out by 2030.
 
 25. The main browser developers were a bit faster to react (https://security.googleblog.com/2014/09/gradually-sunsetting-sha-1.html)* 
-
     *Effectively, Mozilla, Apple, Google and Microsoft cooperate and coordinate on these matters, so it applies to most browsers. See https://cabforum.org/ for more info on this cooperation.
 
-When did they start to phase out SHA-1?
+    When did they start to phase out SHA-1?
+        Chrome - november 2014.
 
 26. Is SHA-3 much used (why/why not)?
+    No. The increased security level is not really needed yet and it costs development time to swap. 
+    SHA-2 is sufficient currently.
+    Also its slower.
 
 27. What is the purpose of a Memory Hard Function (MHF)? (look it up)
+    A function that costs "signficiant" amount of memory (RAM etc) to compute.
 
 28. hash_proof-of-work.py: Modify the program to test out PoW with sha-256 and sha-512. How much harder was it to compute the leading zeros? Use the timing() function if you want, and modify the number of zeros to get reliable data (LEADING_ZEROS)
+    md5 - 1 614 536 tries, Ave.execution time:  0.82386 (100 iterations)
+    sha256 - 596 837 tries, Ave.execution time:  0.59273 (100 iterations)
+    sha512 - 2 550 882 tries, Ave.execution time:  0.93566 (100 iterations)
 
 29. sha256filecheck.py: Find some suitable target files and generate the associated sha255 files, then check that it matches the associated sha256 file. Suggested target file: notepad++
+    ✅
 
 30. MAC functions differ from hash functions. What is the main difference?
+    MAC function also has a secret key. This means you also check the authenticity of the sender.
 
 31. What is an “icv”?
+    ICV is short for Integrity Check Value. Its a check value attached to the data so you can verify that the data hasnt been altered. ICV is a general term for the process, like parent the other ones branch from. 
+    ICV
+     ├─ hash-based check
+     └─ MAC-based check
 
 32. Why was CMAC constructed?
+    CMAC was constructed to be a secure MAC algorithm. 
 
 33. Should you use CMAC in new systems today (why/why not)?
 
@@ -102,8 +135,7 @@ When did they start to phase out SHA-1?
 
 35. Is it easy to exploit the CBC-MAC extension attack for practical use?
 
-36. CMAC is considered a safe construct, but it isn’t the most used type of construct for creating a MAC. 
-    Which is the most used construct?
+36. CMAC is considered a safe construct, but it isn’t the most used type of construct for creating a MAC. Which is the most used construct?
 
 37. HMAC-SHA256 is used as a KDF for deriving the key hierarchies in 4G and 5G mobile systems, but the construct was first specified in a 3G specification. In which specification was the construct used?
 

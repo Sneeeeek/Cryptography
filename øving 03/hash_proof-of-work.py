@@ -13,6 +13,8 @@ import secrets
 import timeit
 
 from hashlib import md5
+from hashlib import sha256
+from hashlib import sha512
 
 
 BLOCK = bytes("""
@@ -39,7 +41,7 @@ def main(silent: bool = False):
     """ Our 'main' function"""
     cnt = 0
     LEADING_ZEROS = 5
-    md_block = md5(BLOCK)
+    md_block = sha512(BLOCK)
 
     if not silent:
         print("\n*** A naive 'proof-of-work' test with md5: the target has {:d} leading '0' (hexdigest).".format(LEADING_ZEROS))
