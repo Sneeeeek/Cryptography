@@ -1,83 +1,170 @@
 Exercise 04: Symmetric Encryption
+
 0. XOR – getting up to speed: (use xor.py )
-keystream =
-b'\x8bW\xbb\x02\xfb.\xf6\x15\xe3L~\x82l\x07D\x01\x95\x9e9_G56\x16\xbb\xc6AK\xbfD\x01\x8d'
-ciphertxt =
-b'\xab}\x91(\xdbb\x93a\x97?\x15\xf0\tj0!\xe6\xf5K:,^\xf5\xae\xdc\xaa$k\x95n+\xad'
-What is the message?
-The message is coded as utf-8. So, the message must be decoded with str(msg,’utf-8’) to print
-properly.
+    keystream =
+    b'\x8bW\xbb\x02\xfb.\xf6\x15\xe3L~\x82l\x07D\x01\x95\x9e9_G56\x16\xbb\xc6AK\xbfD\x01\x8d'
+    ciphertxt =
+    b'\xab}\x91(\xdbb\x93a\x97?\x15\xf0\tj0!\xe6\xf5K:,^\xf5\xae\xdc\xaa$k\x95n+\xad'
+    
+    The message is coded as utf-8. So, the message must be decoded with str(msg,’utf-8’) to print properly.
+    What is the message?
+        *** Lettskremt skrekkøgle *** 
+
 1. Is your Python environment up-to-date?
-import sys
-import cryptography
-from cryptography.hazmat.backends.openssl.backend import backend
-print()
-print("Python",sys.version,"\n")
-print(" Cryptography", cryptography.__version__)
-print(" "+backend.openssl_version_text())
-Then check with OpenSSL: https://openssl-library.org/source/index.html
-You’ll find the “latest” cryptography version number and info:
-- https://cryptography.io/en/latest/changelog/
-Your Python version should be “reasonably new”.
-2. In the book (p.62-63), there is an argument for the minimum block size. How much memory is
-required for a lookup table for 64-bit blocks? And, what about 128-bit blocks?
+    import sys
+    import cryptography
+    from cryptography.hazmat.backends.openssl.backend import backend
+    print()
+    print("Python",sys.version,"\n")
+    print(" Cryptography", cryptography.__version__)
+    print(" "+backend.openssl_version_text())
+    
+    Then check with OpenSSL: https://openssl-library.org/source/index.html
+    You’ll find the “latest” cryptography version number and info: - https://cryptography.io/en/latest/changelog/
+    Your Python version should be “reasonably new”.
+        Yes, newest as of 27.08.2026
+
+2. In the book (p.62-63), there is an argument for the minimum block size. How much memory is required for a lookup table for 64-bit blocks? And, what about 128-bit blocks?
+    Its nice the blocksize is small enogugh to fit in the register of a cpu.
+    From the book:
+        But with 64-bit blocks, you’d have to store 270 bits (a zettabit, or 128 exabytes), so forget about it. Codebook attacks are therefore not an issue for larger blocks of 128 bits or more.
+    With 128 bits, 5.4445178707350154154139937189083e+39 bytes.
+
 3. What is the difference between a block cipher and a stream cipher?
-BTS4410 Exercises 2026
+    A block cipher breaks the message up into blocks that are transformed in some way block by block, a stream cipher outputs a stream that is XORed 1 bit at a time.
+
 4. What key sizes do you consider “large enough” for symmetric key encryption?
+    Currently 128 bit is fine, but in the future we may want to start using 256 bit.
+
 5. Read chapter 4 in the book.
+    ✅
+
 6. How many rounds are there for the AES cipher? (look it up. Note: there are 3 different answers)
+    10 rounds for 128-bit keys.
+    12 rounds for 192-bit keys.
+    14 rounds for 256-bit keys.
+
 7. What is an S-box?
+    Substitution box. 
+    From the book:
+        A small lookup table that transform chunks of 4 or 8 bits.
+
 8. Should the S-box be a 1) linear function or 2) non-linear function?
+    Non-linear
+
 9. Who was Horst Feistel?
+    IBM engineer Horst Feistel designed the block cipher Lucifer.
+
 10. What is the F function?
+    The F function is one of the steps in teh Lucifer cipher.
+    From the book:
+        1. Split the 64-bit block into two 32-bit halves, L and R.
+        2. Set L to L ⊕ F(R), where F is a substitution–permutation round.
+        3. Swap the values of L and R.
+        4. Go to step 2 and repeat 15 times.
+        5. Merge L and R into the 64-bit output block.
+
 11. What are KATs?
-• https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-
-Program/documents/aes/KAT_AES.zip
+    https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/aes/KAT_AES.zip
+        Kat is short for Known Answer Test. They are inputs with associated outputs so you can test if your algorithm is implemented correctly. 
+
 12. Why should you check out the KATs?
+    We will use them for the MILENAGE implementation.
+
 13. What do these abbreviations/acronyms mean:
-• ECB
-• CTR
-• CBC
-• GCM
+    • ECB
+        Electronic CodeBook 
+    • CTR
+        CounTeR 
+    • CBC
+        Cipher Block Chaining 
+    • GCM
+        Galois Counter Mode 
+
 14. Is there an avalanche effect for block cipher? Explain.
+    Depends on the cipher, but they should have it to be good.
+
 15. Why is it that one still can see Tux in the encrypted Tux picture? Explain.
+    There is no randomisation, so blocks of identical data (for example the background or tux' body), just get encrypted to become the same output. 
+
 16. What is an “IV” and why is it used?
-BTS4410 Exercises 2026
+    Initialisation Value. Its similar to a seed which introduces randomness and makes sure indentical plaintext blocks dont output the same ciphertext.
+    If the Tux example had an IV, it woudlnt have the issue.
+
 17. Does the IV need to be (explain):
-• Unique?
-• Unpredictable?
-• Random?
-• Secret?
+    • Unique?
+        Yes, to prevent identical outputs. In theory you could reuse an IV for inputs that are different i guess. 
+    • Unpredictable?
+        If its important to stop an attack from predicting the IV, then yes.
+    • Random?
+        Not technically, but its an easy way to also get unique and Unpredictable numbers. 
+    • Secret?
+        No, its often sent with the encrypted message as cleartext.
+
 18. Check out the CBC_IV_recovery_example.py script. Can there be recovery for later blocks?
+    Yes, it recovers.
+
 19. Which of the mode-of-operations would you use? Explain.
+    That would depend on my use case.
+    If its a one for everything general choice, i would use GCM. Looking online, it seems like AES-GCM has become the default choice for secure communications. 
+    I trust that the cryptographic community is more knowledgeable than, so looking at what other major entites have decided on is useful here.
+        GCM provides both confidentiality and integrity checking which is useful, and since its a counter based cipher, it can be parallelized to take advantage of modern CPUs' core counts.   
+
 20. What is padding, and why is it necessary?
+    A block needs to be a full block of data, so you may need to pad out the block if the message is not long enough.
+
 21. How would you construct symmetric keys? Explain.
+    Using the raw input of a password as a key is a bad idea as it would easily be the weakest link (weak to brute force attack). This leaves us with 2 options:
+        1. Random number generated from a cryptographically secure random number generator.
+        2. Key derived from a password using a Key Derivaton Function. 
+
 22. What is the block size and key size of the DES algorithm?
+    Key size: 56 bits
+    Block size: 64 bits
+
 23. What is CTR and what are the benefits to using CTR?
+    CTR = CounTeR mode-of-operations. 
+    Since each block is independently calculated and only requires the block, key, and counter, the mode is fast and parallelizable.
+    Therefore, you can jump to any block without having to worry about the other blocks (they are not continual for example).
+        Useful becuase for example if you drop a packet or have to encrypt a big file, you dont have to restart from teh beginnign if youre interrupted.
+    CTR also turns the algorithm into a stream cipher, so you dont need padding.
+
 24. What kind of padding would you use for AES-CTR?
+    It doesnt need padding becuase its a stream cipher.
+
 25. CTR is a mode-of-operation for block ciphers. But is AES-CTR a block cipher (explain why/why not).
+    AES-CTR is not a block cipher. AES is a block cipher, and CTR is a mode of operation that turns it into a stream cipher.
+
 26. Read chapter 5 in the book.
+
 27. What is the RC4 algorithm, and why should you not use it?
-28. What is WEP and how/why was it broken (Read the paper “Unsafe at any key size; An analysis of the
-WEP encapsulation” (it’s on canvas)).
-BTS4410 Exercises 2026
+
+28. What is WEP and how/why was it broken (Read the paper “Unsafe at any key size; An analysis of the WEP encapsulation” (it’s on canvas)).
+
 29. What is Salsa20 and ChaCha20 (see the book and https://en.wikipedia.org/wiki/Salsa20)
+
 30. How is ChaCha and BLAKE related? (see https://en.wikipedia.org/wiki/Salsa20)
+
 31. The cryptography package supports the Blowfish algorithm. Should you use it? (why/why not)
+
 32. Counter-mode algorithms are quite popular – why is that? (explain)
+
 33. In a stream cipher, there is no separate decryption function. How do you then do decryption?
+
 34. For a stream cipher SC(), the keystream is only dependent on the key (K) and the nonce/initialization
 vector (N).
-• What are the rules if you want to encrypt different messages (plaintexts)?
-• Do you need to change the key during this process? (why/why not)
-• Does the key have to be secret?
-• Does the nonce have to be secret?
-35. The StreamCipher_Two_plaintexts_w_same_IV-KEY.py file illustrates a “known plaintext attack
-(KPA)” problem. Can this problem be prevented?
-Sure. DO NOT REUSE THE IV/NONCE!!!
+    • What are the rules if you want to encrypt different messages (plaintexts)?
+    • Do you need to change the key during this process? (why/why not)
+    • Does the key have to be secret?
+    • Does the nonce have to be secret?
+
+35. The StreamCipher_Two_plaintexts_w_same_IV-KEY.py file illustrates a “known plaintext attack(KPA)” problem. Can this problem be prevented? Sure. DO NOT REUSE THE IV/NONCE!!!
+
 36. KPA: Read the article on KPA on Wikipedia: https://en.wikipedia.org/wiki/Known-plaintext_attack
-• What techniques were used by the British to get access to KP?
+    • What techniques were used by the British to get access to KP?
+
 37. Sad: IDEA (https://en.wikipedia.org/wiki/International_Data_Encryption_Algorithm)
+
 38. Even more sad: Crypto AG1 (https://en.wikipedia.org/wiki/Crypto_AG) – What was the problem?
     1 Se også: https://www.digi.no/artikler/ledende-kryptoselskap-skal-i-hemmelighet-ha-vaert-eid-av-cia-og-bnd/485066
 
@@ -88,9 +175,9 @@ The task is to decrypt a secret message
 The software used for encrypting the secret message is uncovered: See SuperEncrypt.py
 So, our task is to attempt to decrypt the secret message in the file Ultra_encrypted_message.txt
 What we know:
-• The algorithm is based on “clever” use of hashes and hmac
-• It even includes a counter scheme
-• The designers were not cryptographers and may have made some serious mistakes
-• The scheme is also key-less (an amazing feat!)
+    • The algorithm is based on “clever” use of hashes and hmac
+    • It even includes a counter scheme
+    • The designers were not cryptographers and may have made some serious mistakes
+    • The scheme is also key-less (an amazing feat!)
 There is a small prize to be won for the first one (ones, max 2 persons) to decrypt the secret message.
 Instructions for how to claim the prize are contained in the encrypted text.
