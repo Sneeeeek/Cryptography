@@ -18,13 +18,13 @@ Your task:
 3. Replace diagrams, images, tables, charts, and other non-TTS content with short placeholders like "image removed" or "table removed".
 4. Preserve the original content exactly. Do not paraphrase, summarize, or change wording.
 5. Fix obvious PDF extraction issues only, such as broken line wraps, hyphenation caused by line breaks, and spacing errors.
-6. Keep chapter titles, paragraph structure, and punctuation intact where possible.
+6. Keep chapter titles, paragraph structure, and punctuation intact where possible. Since its copied from a pdf, lines are likely to be split. Fix that. Do not keep page numbers and simialar
 
 Output only the cleaned text."""
 
 print("Sending off to openAI")
 
-response = client.responses.create(model="gpt-5.4-mini", input= sysprompt +"\n" + text,)
+response = client.responses.create(model="gpt-5.4", input= sysprompt +"\n" + text,)
 
 with open("book2txt/output.txt", "w", encoding="utf-8") as f:
     f.write(response.output_text)

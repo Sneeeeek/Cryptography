@@ -128,35 +128,63 @@ Exercise 03: Hash and MAC function
 
 32. Why was CMAC constructed?
     CMAC was constructed to be a secure MAC algorithm. 
+    Cipher Message Authentication Code.
+    AES-MAC
 
 33. Should you use CMAC in new systems today (why/why not)?
+    You can use it, but HMAC is more popular. 
 
 34. Check out that the method used in breaking_cbc_mac.py also applies to other messages than those in the file. For sake of simplicity, use single-block message (the extension attack actually works of multiple blocks too).
+    ✅
 
 35. Is it easy to exploit the CBC-MAC extension attack for practical use?
+    The method to compute the attack is not a problem, but it depends on what access the attacker has. If the attacker can access message, tag pairs its doable. 
 
 36. CMAC is considered a safe construct, but it isn’t the most used type of construct for creating a MAC. Which is the most used construct?
+    HMAC. 
 
 37. HMAC-SHA256 is used as a KDF for deriving the key hierarchies in 4G and 5G mobile systems, but the construct was first specified in a 3G specification. In which specification was the construct used?
+    TS 33.220
 
 38. Why is the HMAC-SHA256 construct a good choice for a KDF?
+    Keyed
+    Well studied and belived to be safe
+    256-bit security
 
 39. Do you know about any current product that relies upon or using MD5 or SHA-1?
+    MD5 is popular for non security tasks. For example, md5 hashes are often used as checksums when downloading things.
+    I did not find any real usage of these on google.  
 
 40. What arguments are there for choosing BLAKE2/BLAKE3?
+    Blake is designed to be really fast, and its still secure. It also has a keyed mode.  
 
 41. What is a Universal Hash (UH) function?
+    Hash function that is not subject to the same requirements as a crypto secure one. For example, it doesnt have to be collision resistant.
+    From book:
+        For any two messages M1 and M2, and a random key K, the probability that UH(K, M1) equals UH(K, M2) must be negligible.
+    Doesnt have to be pseudorandom.
+    Since it doesnt have the requirements it can be simpler and therefore much faster.
 
 42. Is a UH function secure?
+    Depends on the definition of secure. Its secure in that the probability of collisions over randomly selected keys is negligible. 
+    By itself its relatively easy to break.
 
 43. What is the main advantage of a UH function?
+    Speed. Few operations means its faster.
 
 44. Who are Wegman and Carter?
+    IBM researchers Mark Wegman and Lawrence Carter. Published the the Wegman–Carter construction in 1981.
 
 45. What is the point of the Wegman-Carter (W-C) construction?
+    To authenticate multiple messages using a universal hash function. Turn the weak universal hash function into a crypto secure MAC.
 
 46. How may the “PRF” part of the W-C construction be implemented?
+    MACU(Key1, Key2, Message, Nonce) = UniversalHash(Key1, Message) + PseudoRandomFunction(Key2, Nonce)
+        Poly1305 example:
+            Poly1305(K1, M) + AES(K2, N) mod 2^128
 
 47. Read chapter 7 in the book
+    ✅
 
 48. Did you learn anything today? (If so, what did you learn)
+    Yes.

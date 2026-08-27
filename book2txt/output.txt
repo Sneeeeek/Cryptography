@@ -1,454 +1,330 @@
-Hash functions—such as SHA-256, SHA3, and BLAKE3—compose the cryptographer’s Swiss Army Knife: they are used in digital signatures, public-key encryption, integrity verification, message authentication, password protection, key agreement protocols, and many other cryptographic protocols.
+7: Keyed hashing
 
-Whether you’re encrypting an email, sending a message on your mobile phone, connecting to an HTTPS website, or connecting to a remote machine through a virtual private network (VPN) or Secure Shell (SSH), a hash function is somewhere under the hood.
+The hash functions in Chapter 6 take a message and return its hash value—typically a short string of 256 or 512 bits. Anyone can compute the hash value of a message and verify that a particular message hashes to a particular value. When you want only specific people to compute hashes, however, you’ll hash with secret keys using keyed hash functions.
 
-Hash functions are by far the most versatile and ubiquitous of all crypto algorithms. Their applications include the following: cloud storage systems use them to identify identical files and to detect modified files; the Git revision control system uses them to identify files in a repository; endpoint detection and response (EDR) systems use them to detect modified files; network-based intrusion detection systems (NIDSs) use hashes to detect known-malicious data going through a network; forensic analysts use hash values to prove that digital artifacts have not been modified; Bitcoin uses a hash function in its proof-of-work systems—and there are many more.
+Keyed hashing forms the basis of two types of cryptographic algorithms: message authentication codes (MACs), which authenticate a message and protect its integrity, and pseudorandom functions (PRFs), which produce random-looking hash-sized values. We’ll look at the similarities between MACs and PRFs in the first section of this chapter before reviewing how MACs and PRFs work. Some MACs and PRFs are based on hash functions, some are based on block ciphers, and others are original designs. Finally, we’ll discuss examples of attacks on otherwise-secure MACs.
 
-Unlike stream ciphers, which create a long output from a short one, hash functions take a long input and produce a short output, called a hash value or digest (see Figure 6-1).
+Message Authentication Codes
 
-image removed
+A MAC protects a message’s integrity and authenticity by creating a value T = MAC(K, M), called the authentication tag of the message, M (often confusingly called the MAC of M). Just as you can decrypt a message if you know a cipher’s key, you can validate that a message hasn’t been modified if you know a MAC’s key.
 
-This chapter revolves around two main topics. First, security: What does it mean for a hash function to be secure? To that end, I introduce two essential notions—collision resistance and preimage resistance. The second topic revolves around hash function construction. I explain the high-level techniques modern hash functions use and then review the internals of the most common hash functions: SHA-1, SHA-2, SHA-3, and BLAKE2. Finally, you see how secure hash functions can behave insecurely if misused.
+For example, say Alex and Bill share a key, K, and Alex sends a message, M, to Bill along with its authentication tag, T = MAC(K, M). Upon receiving the message and its authentication tag, Bill recomputes MAC(K, M) and checks that it’s equal to the authentication tag received. Because only Alex could have computed this value, Bill knows that the message wasn’t corrupted in transit (confirming its integrity), whether accidentally or maliciously, and that Alex sent that message (confirming its authenticity).
 
-NOTE Don’t confuse cryptographic hash functions with noncryptographic ones. You use noncryptographic hash functions in data structures such as hash tables or to detect accidental errors, and they provide no security whatsoever. For example, cyclic redundancy checks (CRCs) are noncryptographic hashes you use to detect accidental modifications of a file.
+MACs in Secure Communication
 
-Secure Hash Functions
+Secure communication systems often combine a cipher and a MAC to protect a message’s confidentiality, integrity, and authenticity. For example, the protocols in Internet Protocol Security (IPsec), SSH, and TLS generate a MAC for each transmitted network packet.
 
-The notion of security for hash functions is different from what we’ve discussed thus far. Whereas ciphers protect data confidentiality in an effort to guarantee that data sent in the clear can’t be read, hash functions protect data integrity in an effort to guarantee that data—whether sent in the clear or encrypted—hasn’t been modified. If a hash function is secure, two distinct pieces of data should always have different hashes. A file’s hash can thus serve as its identifier.
+Not all communication systems use MACs. Sometimes an authentication tag can add unacceptable overhead to each packet, typically in the range of 64 to 128 bits. For example, the old GSM mobile telephony standard encrypted packets encoding voice calls but didn’t authenticate them. An attacker could modify the encrypted audio signal, and the recipient wouldn’t notice.
 
-Consider the most common application of a hash function: digital signatures, or just signatures. When using digital signatures, applications process the hash of the message to be signed rather than the message itself, as Figure 6-2 illustrates.
+Forgery and Chosen-Message Attacks
 
-image removed
+What does it mean for a MAC to be secure? First, as with a cipher, the secret key should remain secret. If a MAC is secure, an attacker shouldn’t be able to create a tag of some message if they don’t know the key. We call a fabricated message/tag pair a forgery, and recovering a key is a specific case of a more general class of forgery attacks. The security notion that posits that forgeries should be impossible to find is unforgeability. It should also be impossible to recover the secret key from a list of tags; otherwise, attackers could forge tags using the key.
 
-The hash acts as an identifier for the message. If even a single bit is changed in the message, the hash of the message will be totally different. The hash function thus helps ensure that the message hasn’t been modified. Signing a message’s hash is as secure as signing the message itself, and signing a short hash of, say, 256 bits is much faster than signing a message that may be very large. In fact, most signature algorithms work only on short inputs such as hash values.
+What can an attacker do to break a MAC? In other words, what’s the attack model? The most basic attack model is the known-message attack, which passively collects messages and their associated tags (for example, by eavesdropping on a network). But real attackers can often launch active attacks because they can choose the messages to be authenticated and therefore get the MAC of the message they want. The standard model is thus chosen-message attacks, wherein attackers get tags for messages of their choice.
 
-Unpredictability Again
+Replay Attacks
 
-The cryptographic strength of hash functions stems from the unpredictability of their outputs. Take the following 256-bit hexadecimal values; you compute these hashes using the NIST standard hash function SHA-256 with the ASCII letters a, b, and c as inputs. Though the values a, b, and c differ by only 1 or 2 bits (a is the bit sequence 01100001, b is 01100010, and c is 01100011), their hash values are completely different:
+MACs aren’t safe from attacks involving replays of tags. For example, if you were to eavesdrop on Alex and Bill’s communications, you could capture a message and its tag sent by Alex to Bill and later send them again to Bill pretending to be Alex. To prevent such replay attacks, protocols include a message number in each message. This number is incremented for each new message and authenticated along with the message by the MAC. The receiving party gets messages numbered 1, 2, 3, 4, and so on. Thus, if an attacker tries to send message 1 again, the receiver notices that this message is out of order and that it’s a potential replay of the earlier message 1.
 
-SHA-256("a") = ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb  
-SHA-256("b") = 3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d  
-SHA-256("c") = 2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6
+Pseudorandom Functions
 
-Given only these three hashes, it’s impossible to predict the value of the SHA-256 hash of d or any of its bits because hash values of a secure hash function are unpredictable. A secure hash function should be like a black box that returns a random string each time it receives an input.
+A PRF uses a secret key to return PRF(K, M), such that the output looks random. Because the key is secret, the output values are unpredictable to an attacker.
 
-The general, theoretical definition of a secure hash function is that it behaves like a truly random function (sometimes called a random oracle). Specifically, a secure hash function shouldn’t have any property or pattern that a random function wouldn’t have. This definition is helpful for theoreticians, but in practice we need more specific notions, namely, preimage resistance and collision resistance.
+Unlike MACs, PRFs are not meant to be used on their own but as part of a cryptographic algorithm or protocol. For example, you can use PRFs to create block ciphers within the Feistel construction—see “How to Construct Block Ciphers” in Chapter 4. Key derivation schemes use PRFs to generate cryptographic keys from a master key or password, and identification schemes use PRFs to generate a response from a random challenge. (Basically, a server sends a random challenge message, M, and the client returns PRF(K, M) in its response to prove that it knows K.) The 5G telephony standard uses a PRF to authenticate a SIM card and its service provider, and a similar PRF generates the encryption key and MAC key to be used during a phone call. The TLS protocol uses a PRF to generate key material from a master secret as well as session-specific random values. There’s even a PRF in the noncryptographic hash() function built into the Python language to compare objects.
 
-Preimage Resistance
+PRF Security
 
-A preimage of a given hash value, H, is any message, M, such that Hash(M) = H. Preimage resistance describes the security guarantee that given a random hash value, an attacker will never find a preimage of that hash value. Indeed, you can sometimes call hash functions one-way functions because you can go from the message to its hash but not the other way around.
+To be secure, a pseudorandom function should have no pattern that sets its outputs apart from truly random values. An attacker who doesn’t know the key, K, shouldn’t be able to distinguish the outputs of PRF(K, M) from random values. Viewed differently, an attacker shouldn’t have any means of knowing whether they’re talking to a PRF algorithm or to a random function. The erudite phrase for that security notion is “indistinguishability from a random function.” (To learn more about the theoretical foundations of PRFs, see Volume 1, Section 3.6 of Goldreich’s Foundations of Cryptography.)
 
-Indeed, you can’t invert a hash function, even given unlimited computing power. For example, suppose that I hash some message using the SHA-256 hash function and get this 256-bit hash value:
+PRFs Are Stronger Than MACs
 
-f67a58184cef99d6dfc3045f08645e844f2837ee4bfcc6c949c9f76743667adfd
+PRFs and MACs are keyed hashes, but PRFs are fundamentally stronger than MACs because MACs have weaker security requirements. Whereas you would consider a MAC secure if an attacker can’t forge tags—that is, if they can’t guess the MAC’s outputs—a PRF is secure only if its outputs are indistinguishable random strings. If you can’t distinguish a PRF’s outputs from random strings, this implies their values can’t be guessed; in other words, any secure PRF is also a secure MAC.
 
-Even given infinite time and computing power, you’d never be able to determine the message that I picked to produce this particular hash, since there are many messages hashing to the same value. You would therefore find some messages that produce this hash value (possibly including the one I picked) but would be unable to determine the message I used. You get unconditional security.
+The converse is not true, however: a secure MAC isn’t necessarily a secure PRF. For example, say you start with a secure PRF, PRF1, and you want to build a second PRF, PRF2, from it, like this:
 
-For example, there are 2^256 possible values of a 256-bit hash (a typical length with hash functions used in practice), but there are many more values of, say, 1,024-bit messages (namely, 2^1,024 possible values). Therefore, it follows that, on average, each possible 256-bit hash value will have 2^1,024 / 2^256 = 2^1,024 – 256 = 2^768 preimages of 1,024 bits each.
+PRF2(K, M) = PRF1(K, M) || 0
 
-In practice, you must be sure that it’s practically impossible to find any message that maps to a given hash value, not just the message that was used, which is what preimage resistance actually stands for. Specifically, you can speak of first-preimage and second-preimage resistance. First-preimage resistance (or just preimage resistance) describes cases where it’s practically impossible to find a message that hashes to a given value. Second-preimage resistance, on the other hand, describes the case that when given a message, M1, it’s practically impossible to find another message, M2, that hashes to the same value that M1 does.
+Because PRF2’s output is defined as PRF1’s output followed by one 0 bit, it doesn’t look as random as a true random string, and you can distinguish its outputs by that last 0 bit. Hence, PRF2 is not a secure PRF. However, because PRF1 is secure, PRF2 would still make a secure MAC. If you were able to forge a tag, T = PRF2(K, M), for some M, then you’d also be able to forge a tag for PRF1, which you know to be impossible in the first place because PRF1 is a secure MAC. Thus, PRF2 is a keyed hash that’s a secure MAC but not a secure PRF.
 
-The Cost of Preimages
+But don’t worry: you won’t find such MAC constructions in real applications. In fact, many of the deployed or standardized MACs are also secure PRFs and are often used as either. For example, TLS uses the algorithm HMAC-SHA-256 both as a MAC and as a PRF.
 
-Given a hash function and a hash value, you can search for first preimages by trying different messages until one hits the target hash. Listing 6-1 shows how to do this using an algorithm similar to solve_preimage().
+How to Create Keyed Hashes from Unkeyed Hashes
 
-solve_preimage(H) {
- repeat {
- M = random_message()
- if Hash(M) == H then return M
- }
-}
+Throughout cryptography’s history, MACs and PRFs have rarely been designed from scratch but rather have been built from existing algorithms, usually hash functions or block ciphers. It might seem obvious that you can produce a keyed hash function by feeding an (unkeyed) hash function a key and a message, but this is easier said than done.
 
-Listing 6-1: The optimal preimage search algorithm for a secure hash function
+The Secret-Prefix Construction
 
-Here, random_message() generates a random message (say, a random 1,024-bit value). If the hash’s bit length, n, is large enough, solve_preimage() will practically never complete, because it will take on average 2^n attempts before finding a preimage. That’s a hopeless situation when working with n = 256, as in modern hashes like SHA-256 and BLAKE2.
+The first technique we’ll examine, the secret-prefix construction, turns a normal hash function into a keyed hash by prepending the key to the message and returning Hash(K || M). This approach is insecure when the hash function is vulnerable to length-extension attacks (see “The Length-Extension Attack” in Chapter 6) and when the hash supports keys of different lengths.
 
-Why Second-Preimage Resistance Is Weaker
+Insecurity Against Length-Extension Attacks
 
-If you can find first preimages, then you can find second preimages as well (for the same hash function). As proof, if the algorithm solve_preimage() returns a preimage of a given hash value, use the algorithm in Listing 6-2 to find a second preimage of some message, M.
+Recall from Chapter 6 that hash functions of the SHA-2 family allow attackers to compute the hash of a partially unknown message when given a hash of a shorter version of that message. In formal terms, the length-extension attack allows attackers to compute Hash(K || M1 || M2) given only Hash(K || M1) and neither M1 nor K. These functions allow attackers to forge valid MAC tags for free because they shouldn’t be able to guess the MAC of M1 || M2 given only the MAC of M1. This fact makes the secret-prefix construction insecure as a MAC and PRF when, for example, using it with SHA-256 or SHA-512. It’s a weakness of Merkle–Damgård to allow length-extension attacks, and none of the SHA-3 finalists do. The ability to thwart length-extension attacks was mandatory for SHA-3 submissions (see Chapter 6).
 
-solve_second_preimage(M) {
- H = Hash(M)
- return solve_preimage(H)
-}
+Insecurity with Different Key Lengths
 
-Listing 6-2: How to find second preimages if you can find first preimages
+The secret-prefix construction is also insecure when allowing the use of keys of different lengths. For example, if the key K is the 24-bit hexadecimal string 123abc and M is def00, then Hash() processes the value K || M = 123abcdef00. If K is instead the 16-bit string 123a and M is bcdef000, then Hash() processes K || M = 123abcdef00, too. Therefore, the result of the secret-prefix construction Hash(K || M) is the same for both keys.
 
-You’ll find the second preimage by seeing it as a preimage problem and applying the preimage attack. It follows that any second-preimage resistant hash function is also preimage resistant. (Were it not, it wouldn’t be second preimage resistant either, per the preceding solve_second_preimage() algorithm.)
+This problem is independent of the underlying hash; you can fix it by hashing the key’s length along with the key and the message—for example, by encoding the key’s bit length as a 16-bit integer, L, and then hashing Hash(L || K || M). You shouldn’t have to do this, however, as modern hash functions such as BLAKE2 and SHA-3 include a keyed mode that avoids these pitfalls and yields a secure PRF and thus a secure MAC as well.
 
-In other words, the best attack you can use to find second preimages is almost identical to the best attack you can use to find first preimages, unless the hash function has some defect that allows for more efficient attacks. Also note that a preimage search attack is fundamentally similar to a key-recovery attack on a block cipher or stream cipher, except that in the case of encryption there is exactly one solution of known size.
+The Secret-Suffix Construction
 
-Collision Resistance
+Instead of hashing the key before the message as in the secret-prefix construction, you can hash it after. And that’s exactly how the secret-suffix construction works by building a PRF from a hash function as Hash(M || K).
 
-Whatever hash function you choose, collisions will inevitably exist because of the pigeonhole principle, which posits that if you have m holes and n pigeons to put into those holes and if n is greater than m, at least one hole must contain more than one pigeon.
+Putting the key at the end makes quite a difference. The length-extension attack that works against secret-prefix MACs won’t work against the secret suffix. Applying length extension to a secret-suffix MAC results in Hash(M1 || K || M2) from Hash(M1 || K), but this isn’t a valid attack because Hash(M1 || K || M2) isn’t a valid secret-suffix MAC; the key needs to be at the end.
 
-NOTE You can generalize the pigeonhole principle to other items and containers. For example, any 27-word sequence in the US Constitution includes at least two words that start with the same letter. In the world of hash functions, holes are the hash values, and pigeons are the messages. Because you know that there are many more possible messages than hash values, collisions must exist.
+However, the secret-suffix construction is weaker against another type of attack. Say you’ve got a collision for the hash Hash(M1) = Hash(M2), where M1 and M2 are two distinct messages, possibly of different sizes. In the case of an M–D hash function such as SHA-256, this implies that Hash(M1 || P1 || K) and Hash(M2 || P2 || K) will be equal too, where P1 and P2 are the padding data added to complete a block. After processing M1 || P1, the hash function’s state is the same as after processing M2 || P2. Adding K to each instance preserves the equality of the state, leading to a collision regardless of K’s value.
 
-However, despite the inevitable, collisions should be hard to find to consider a hash function collision resistant—in other words, attackers shouldn’t be able to find two distinct messages that hash to the same value.
+To exploit this property, an attacker:
+1. Finds two colliding messages, M1 and M2
+2. Requests the MAC tag of M1, Hash(M1 || K)
+3. Guesses that Hash(M2 || K) is the same, thereby forging a valid tag and breaking the MAC’s security
 
-The notion of collision resistance relates to that of second-preimage resistance: if you can find second preimages for a hash function, you can also find collisions, as Listing 6-3 shows.
+The HMAC Construction
 
-solve_collision() {
- M = random_message()
- return (M, solve_second_preimage(M))
-}
+The hash-based MAC (HMAC) construction allows you to build a MAC from a hash function, which is more secure than either secret prefix or secret suffix. HMAC yields a secure PRF as long as the underlying hash is collision resistant, but even if that isn’t the case, HMAC still yields a secure PRF if the hash’s compression function is a PRF. The secure communication protocols IPsec, SSH, and TLS have all used HMAC. (You’ll find HMAC specifications in the NIST FIPS 198-1 standard and in RFC 2104.)
 
-Listing 6-3: The naive collision search algorithm
-
-That is, any collision-resistant hash is also second-preimage resistant. If this were not the case, there would be an efficient solve-second-preimage algorithm that could be used to break collision resistance.
-
-How to Find Collisions
-
-Finding collisions is faster than finding preimages: it takes approximately 2^n/2 operations instead of 2^n, thanks to the birthday attack, whose key idea is the following: given N messages and as many hash values, you can produce a total of N × (N – 1) / 2 potential collisions by considering each pair of two hash values (a number of the same order of magnitude as N^2). It’s called the birthday attack because it’s usually illustrated using the birthday paradox, which is the fact that a group of 23 people will include two people having the same birth date with probability close to 1/2—which is not a paradox, just a surprise for many people.
-
-NOTE N × (N – 1) / 2 is the count of pairs of two distinct messages, where you divide by 2 because you view (M1, M2) and (M2, M1) as a same pair, the ordering being unimportant.
-
-For comparison, in the case of a preimage search, N messages get you only N candidate preimages, whereas the same N messages give approximately N^2 potential collisions. With N^2 instead of N, you can say that there are quadratically more chances to find a solution. The complexity of the search is in turn quadratically lower: to find a collision, use the square root of 2^n messages; that is, use 2^n/2 instead of 2^n.
-
-The Naive Birthday Attack
-
-Here’s the simplest way to find collisions using the birthday attack:
-
-1. Compute 2^n/2 hashes of 2^n/2 arbitrarily chosen messages and store all the message/hash pairs in a list.  
-2. Sort the list with respect to the hash value to move any identical hash values next to each other.  
-3. Search the sorted list to find two consecutive entries with the same hash value.
-
-Unfortunately, this method requires a lot of memory (enough to store 2^n/2 message/hash pairs), and sorting lots of elements slows down the search, requiring about n2^n/2 operations on average, using a fast sorting algorithm such as quicksort.
-
-Low-Memory Collision Search with the Rho Method
-
-The Rho method is an algorithm for finding collisions that, unlike the naive birthday attack, requires only a small amount of memory. It works like this:
-
-1. Given a hash function with n-bit hash values, pick some random hash value (H1), and define H1 = H′1.  
-2. Compute H2 = Hash(H1) and H′2 = Hash(Hash(H′1)). In the first case apply the hash function once, while in the second case apply it twice.  
-3. Iterate the process and compute Hi + 1 = Hash(Hi), H′i + 1 = Hash(Hash(H′i)), for increasing values of i, until you reach i such that Hi + 1 = H′i + 1.
-
-Figure 6-3 helps visualize the attack, where an arrow from, say, H1 to H2 means H2 = Hash(H1). Observe that the sequence of His eventually enters a loop, also called a cycle, which resembles the Greek letter rho (ρ) in shape. The cycle starts at H5 and is characterized by the collision Hash(H4) = Hash(H10) = H5. The key observation here is that to find a collision, you simply need to find such a cycle. The Rho method allows an attacker to detect the position of the cycle and therefore to find the collision.
+HMAC uses a hash function, Hash, to compute a MAC tag, as Figure 7-1 shows and according to the following expression:
 
 image removed
 
-Advanced collision-finding techniques based on the Rho method work by first detecting the start of the cycle and then finding the collision, without storing numerous values in memory or needing to sort a long list. This takes about 2^n/2 operations to succeed. Indeed, Figure 6-3 has many fewer hash values than would an actual function with digests of 256 bits or more. On average, the cycle and the tail (the part that extends from H1 to H5 in Figure 6-3) each include about 2^n/2 hash values, where n is the bit length of the hash values. Therefore, you’ll need at least 2^n/2 + 2^n/2 evaluations of the hash to find a collision.
+The value opad (outer padding) is the hexadecimal string 5c5c5c...5c as long as Hash’s block size. The key, K, is usually shorter than one block that’s filled with 00 bytes and XORed with opad. For example, if K is the 1-byte string 00, then K ⊕ opad = opad. (The same is true if K is the all-zero string of any length up to a block’s length.) K ⊕ opad is the first block processed by the outer call to Hash—namely, the leftmost Hash in the preceding equation, or the bottom hash in Figure 7-1.
 
-How to Build Hash Functions
+The value ipad (inner padding) is a string (363636 . . . 36) as long as the Hash’s block size and completed with 00 bytes. The resulting block is the first processed by the inner call to Hash—namely, the rightmost Hash in the equation, or the top hash in Figure 7-1.
 
-In the 1980s, cryptographers realized that the simplest way to hash a message is to split it into chunks and process each chunk consecutively using a similar algorithm. This strategy, iterative hashing, comes in two main forms:
+NOTE The envelope method is a more secure construction than secret prefix or secret suffix. It’s expressed as Hash(K || M || K), a sandwich MAC, but it’s theoretically less secure than HMAC.
 
-• Iterative hashing using a compression function that transforms an input to a smaller output, as Figure 6-4 illustrates. This technique is also called the Merkle–Damgård construction, named after the cryptographers Ralph Merkle and Ivan Damgård who described it.  
-• Iterative hashing using a function that transforms an input to an output of the same size, such that any two different inputs give two different outputs (that is, a permutation). Such functions are called sponge functions.
+If SHA-256 is the hash function used as Hash, then you call the HMAC instance HMAC-SHA-256. More generally, you call HMAC-Hash an HMAC instance using the hash function Hash. That means if someone asks you to use HMAC, you should always ask, “Which hash function?”
 
-image removed
+A Generic Attack Against Hash-Based MACs
 
-We’ll now discuss how these constructions work and how compression functions look in practice.
+There is one attack that works against all MACs based on an iterated hash function. Recall the attack in “The Secret-Suffix Construction” on page 143 where we used a hash collision to get a collision of MACs. You can use the same strategy to attack a secret-prefix MAC or HMAC, though the consequences are less devastating.
 
-Compression-Based Hash Functions
-
-All hash functions developed from the 1980s through the 2010s are based on the Merkle–Damgård (M–D) construction: MD4, MD5, SHA-1, and the SHA-2 family, as well as the lesser-known RIPEMD and Whirlpool hash functions. While the M–D construction isn’t perfect, it is simple and has proven to be secure enough for many applications.
-
-NOTE In MD4, MD5, and RIPEMD, the MD stands for message digest rather than Merkle–Damgård.
-
-To hash a message, the M–D construction splits the message into blocks of identical size and mixes these blocks with an internal state using a compression function, as Figure 6-4 shows. Here, H0 is the initial value (denoted IV) of the internal state, the values H1, H2, . . . are the chaining values, and the final value of the internal state is the message’s hash value.
-
-The message blocks are often 512 or 1,024 bits, but they can, in principle, be any size. Whatever the block length, it is fixed for a given hash function. For example, SHA-256 works with 512-bit blocks, and SHA-512 works with 1,024-bit blocks.
-
-Padding Blocks
-
-What happens if you want to hash a message that can’t be split into a sequence of complete blocks? For example, if blocks are 512 bits, then a 520-bit message consists of one 512-bit block plus 8 bits. In such a case, the M–D construction forms the last block as follows: take the chunk of bits left (8 in our example), append 1 bit, then append 0 bits, and finally append the length of the original message, encoded on a fixed number of bits.
-
-This padding trick guarantees that any two distinct messages give a distinct sequence of blocks and thus a distinct hash value.
-
-For example, if you hash the 8-bit string 10101010 using SHA-256, which is a hash function with 512-bit message blocks, the first and only block appears, in bits, as follows:
-
-101010101000000000000000 ( .. .) 0000000000001000
-
-Here, the message bits are the first 8 bits (10101010), and the padding bits are all the subsequent bits (shown in italic). The 1000 at the end of the block (underlined) is the message’s length, or 8 encoded in binary (on 32 bits at most). The padding thus produces a 512-bit message composed of a single 512-bit block, ready to be processed by SHA-256’s compression function.
-
-Security Guarantees
-
-The Merkle–Damgård construction turns a secure compression function that takes small, fixed-length inputs into a secure hash function that takes inputs of arbitrary lengths. If a compression function is preimage and collision resistant, then a hash function built on it using the M–D construction is also preimage and collision resistant. This is true because we can turn any successful preimage attack for the M–D hash into a successful preimage attack for the compression function, as Merkle and Damgård demonstrated in their 1989 papers (see this chapter’s “Further Reading” section).
-
-The same is true for collisions: an attacker can’t break the hash’s collision resistance without breaking the underlying compression function’s collision resistance; hence, the security of the latter guarantees the security of the hash.
-
-Note that the converse argument doesn’t hold, because a collision for the compression function doesn’t necessarily give a collision for the hash. An arbitrary collision between Compress(X, M1) and Compress(Y, M2) for chaining values X and Y, both distinct from H0, won’t get you a collision for the hash because you can’t “plug” the collision into the iterative chain of hashes—except if one of the chaining values happens to be X and the other Y, but that’s unlikely to happen.
-
-Finding Multicollisions
-
-A multicollision occurs when a set of three or more messages hash to the same value. For example, the triplet (X, Y, Z), such that Hash(X) = Hash(Y) = Hash(Z), is a 3-collision. Ideally, multicollisions should be much harder to find than collisions, but there’s a simple trick for finding them at almost the same cost as that of a single collision. Here’s how it works:
-
-1. Find a collision Compress(H0, M1.1) = Compress(H0, M1.2) = H1. This is just a 2-collision, or two messages hashing to the same value.  
-2. Find a second collision with H1 as a starting chaining value: Compress(H1, M2.1) = Compress(H1, M2.2) = H2. Now you have a 4-collision, with four messages hashing to the same value H2: M1.1 || M2.1, M1.1 || M2.2, M1.2 || M2.1, and M1.2 || M2.2.  
-3. Repeat and find N times a collision, and you’ll have 2N messages, each of N blocks, hashing to the same value—that is, a 2N-collision, at the cost of “only” about N2N hash computations.
-
-In practice, this trick isn’t all that practical because it requires finding a basic 2-collision in the first place.
-
-Building Compression Functions
-
-All compression functions used in real hash functions such as SHA-256 and BLAKE2 are based on block ciphers because that’s the simplest way to build a compression function. Figure 6-5 shows the most common of the block cipher–based compression functions, the Davies–Meyer construction.
+Figure 7-2 illustrates the secret-prefix MAC Hash(K || M).
 
 image removed
 
-Given a message block Mi and the previous chaining value Hi – 1, the Davies–Meyer compression function uses a block cipher, E, to compute the new chaining value as:
+If the digest is n bits, you can find two messages, M1 and M2, such that Hash(K || M1) = Hash(K || M2), by requesting approximately 2n/2 MAC tags to the system holding the key. (Recall the birthday attack from Chapter 6.) If the hash lends itself to length extension, as SHA-256 does, you can then use M1 and M2 to forge MACs by choosing some arbitrary data, M3, and then querying the MAC oracle for Hash(K || M1 || M3), which is the MAC of message M1 || M3. As it turns out, this is also the MAC of message M2 || M3 because the hash’s internal state of M1 and M3 and M2 and M3 is the same. You’ve successfully forged a MAC tag. (The effort becomes infeasible as n grows beyond, say, 128 bits.)
 
-HM i HHi = E() , − 1 ⊕ − 1
+This attack works even if the hash function isn’t vulnerable to length extension, and it works for HMAC, too. This is because all that’s required is an internal collision in the hash function and not necessarily in the complete hash. The cost of the attack depends on both the size of the chaining value and the MAC’s length: if a MAC’s chaining value is 512 bits and its tags are 128 bits, a 2^64 computation would find a MAC collision but probably not a collision in the internal state, since finding such a collision requires 2^(512/2) = 2^256 operations on average.
 
-The message block Mi acts as the block cipher key, and the chaining value Hi – 1 acts as its plaintext block. As long as the block cipher is secure, the resulting compression function is secure as well as collision and preimage resistant. Without the XOR of the preceding chaining value (⊕ Hi – 1), Davies–Meyer would be insecure because you could invert it, going from the new chaining value to the previous one using the block cipher’s decryption function.
+How to Create Keyed Hashes from Block Ciphers
 
-NOTE The Davies–Meyer construction has a surprising property: you can find fixed points, or chaining values, that are unchanged after applying the compression function with a given message block. It suffices to take Hi – 1 = D(Mi, 0) as a chaining value, where D is the decryption function corresponding to E. The new chaining value Hi is therefore equal to the original Hi – 1:
+The compression functions in many hash functions are built on block ciphers (see Chapter 6). For example, HMAC-SHA-256 PRF is a series of calls to SHA-256’s compression function, which is a block cipher that repeats a sequence of rounds. In other words, HMAC-SHA-256 is a block cipher inside a compression function inside a hash inside the HMAC construction. So why not use a block cipher directly rather than build such a layered construction?
 
-HM HH M D MM  
-M  
-ii ii ii i  
-i  
-=⊕ =⊕  
-=⊕  
-() () () ()  
-(  
-EE −− D  
-D  
-, , , ,  
-,  
-11 00  
-00)( == D MH ii ) − , 0 1
+Cipher-based MAC (CMAC) is such a construction: it creates a MAC given only a block cipher, such as AES. Though less popular than HMAC, CMAC is deployed in many systems, including the Internet Key Exchange (IKE) protocol, which is part of the IPsec suite. IKE, for example, generates key material using the AES-CMAC-PRF-128 construction as a core algorithm (or CMAC based on AES with 128-bit output). CMAC is specified in RFC 4493.
 
-You get Hi = Hi – 1 because plugging the decryption of zero into the encryption function yields zero—the term E(Mi, D(Mi, 0)) = 0—leaving only the ⊕ Hi – 1 part of the equation in the expression of the compression function’s output. You can then find fixed points for the compression functions of the SHA-2 functions, for example, which are based on the Davies–Meyer construction. Fortunately, fixed points aren’t a security risk.
+Breaking CBC-MAC
 
-There are many block cipher–based compression functions other than Davies–Meyer, such as those in Figure 6-6.
+CMAC was designed in 2005 as an improved version of CBC-MAC, a simpler block cipher–based MAC derived from the cipher block chaining (CBC) block cipher mode of operation (see “Modes of Operation” in Chapter 4).
 
-image removed
+CBC-MAC, the ancestor of CMAC, is simple: to compute the tag of a message, M, given a block cipher, E, encrypt M in CBC mode with an all-zero initial value (IV) and discard all but the last ciphertext block. That is, compute
 
-These are less popular because they’re more complex or require the message block to be the same length as the chaining value.
+C1 = E(K, M1), C2 = E(K, M2 ⊕ C1), C3 = E(K, M3 ⊕ C2)
 
-Permutation-Based Hash Functions
+and so on for each of M’s blocks and keep only the last Ci—your CBC-MAC tag for M—simple, and simple to attack.
 
-After decades of research, cryptographers know everything there is to know about block cipher–based hashing techniques. Still, shouldn’t there be a simpler way to hash? Why bother with a block cipher, an algorithm that takes a secret key, when hash functions don’t take a secret key? Why not build hash functions with a fixed-key block cipher, a single permutation algorithm?
+To understand why CBC-MAC is insecure, consider the CBC-MAC tag, T1 = E(K, M1), of a single-block message, M1, and the tag, T2 = E(K, M2), of another single-block message, M2. Given these two pairs, (M1, T1) and (M2, T2), you can deduce that T2 is also the tag of the two-block message M1 || (M2 ⊕ T1). If you apply CBC-MAC to M1 || (M2 ⊕ T1) and compute C1 = E(K, M1) = T1 followed by C2 = E(K, (M2 ⊕ T1) ⊕ T1) = E(K, M2) = T2, you can create a third message/tag pair from two message/tag pairs without knowing the key. That is, you can forge CBC-MAC tags, thereby breaking CBC-MAC’s security.
 
-Those simpler hash functions are sponge functions, and they use a single permutation instead of a compression function and a block cipher (see Figure 6-7). Instead of using a block cipher to mix message bits with the internal state, sponge functions just do an XOR operation. Sponge functions are not only simpler than Merkle–Damgård functions, they’re also more versatile. You’ll find them used as hash functions and also as deterministic random bit generators, stream ciphers, pseudorandom functions (see Chapter 7), and authenticated ciphers (see Chapter 8). The most famous sponge function is Keccak, also known as SHA-3.
+Fixing CBC-MAC
+
+CMAC fixes CBC-MAC by processing the last block using a different key from the preceding blocks. To do this, CMAC first derives two keys, K1 and K2, from the main key, K, such that K, K1, and K2 are distinct. CMAC processes the last block using either K1 or K2, while the preceding blocks use K.
+
+To determine K1 and K2, CMAC first computes a temporary value, L = E(0, K), where 0 acts as the key of the block cipher and K acts as the plaintext block. Then CMAC sets K1 to (L << 1) if L’s most significant bit (MSB) is 0 and to (L << 1) ⊕ 87 if L’s MSB is 1. (The hexadecimal number 87, or 135 in decimal, is chosen for its mathematical properties when data blocks are 128 bits; a different value is needed when blocks aren’t 128 bits.) The key K2 is set to (K1 << 1) if K1’s MSB is 0 and to K2 = (K1 << 1) ⊕ 87 otherwise.
+
+Given K1 and K2, CMAC works like CBC-MAC, except for the last block. If the final message chunk Mn is exactly the size of a block, CMAC returns E(K, Mn ⊕ Cn − 1 ⊕ K1) as a tag, as Figure 7-3 illustrates.
 
 image removed
 
-A sponge function works as follows:
-
-1. It XORs the first message block, M1, to H0, a predefined initial value of the internal state (for example, the all-zero string). Message blocks are all the same size and smaller than the internal state.  
-2. A permutation, P, transforms the internal state to another value of the same size.  
-3. It XORs block M2 and applies P and then repeats this for the message blocks M3, M4, and so on. This is the absorbing phase.  
-4. After injecting all the message blocks, it applies P again and extracts a block of bits from the state to form the hash. If you need a longer hash, apply P again and extract a block. This is the squeezing phase.
-
-The security of a sponge function depends on the length of its internal state and the length of the blocks. If message blocks are r-bit long and the internal state is w-bit long, then there are c = w – r bits of the internal state that message blocks can’t modify. The value of c is a sponge’s capacity, and the security level guaranteed by the sponge function is c/2. For example, to reach 256-bit security with 64-bit message blocks, the internal state should be at least w = 2 × 256 + 64 = 576 bits. The security level also depends on the length, n, of the hash value. The complexity of a collision attack is therefore the smallest value between 2^n/2 and 2^c/2, while the complexity of a second preimage attack is the smallest value between 2^n and 2^c/2.
-
-To be secure, the permutation P should behave like a random permutation, without statistical bias and without a mathematical structure that would allow an attacker to predict outputs. As with compression function–based hashes, sponge functions also pad messages, but the padding is simpler because it doesn’t need to include the message’s length. The last message bit is simply followed by a 1 bit and as many zeros as necessary.
-
-The SHA Family of Hash Functions
-
-The Secure Hash Algorithm (SHA) hash functions are standards defined by NIST for use by nonmilitary federal government agencies in the United States. They are considered worldwide standards, and only certain non-US governments opt for their own hash algorithms (such as China’s SM3, Russia’s Streebog, and Ukraine’s Kupyna) for reasons of sovereignty rather than a lack of trust in SHA’s security. The US SHAs have been more extensively reviewed by cryptanalysts than the non-US ones.
-
-NOTE Message Digest 5 (MD5) was the most popular hash function from 1992 until it was broken around 2005, and many applications switched to one of the SHA hash functions. MD5 processes 512-bit block messages and updates a 128-bit internal state to produce a 128-bit hash, thus providing at best 128-bit preimage security and 64-bit collision security. In 1996, cryptanalysts warned of a collision for MD5’s compression function, but their warning went unheeded until 2005 when a team of Chinese cryptanalysts discovered how to compute collisions for the full MD5 hash. As I write this, it takes only seconds to find a collision for MD5, yet some systems still use or support MD5, often for reasons of backward compatibility.
-
-SHA-1
-
-The SHA-1 standard arose from a failure in the NSA’s original SHA-0 hash function. In 1993, NIST standardized the SHA-0 hash algorithm, but in 1995 the NSA released SHA-1 to fix an unidentified security issue in SHA-0. The reason for the tweak became clear when in 1998 two researchers discovered how to find collisions for SHA-0 in about 2^60 operations instead of the 2^80 expected for 160-bit hash functions such as SHA-0 and SHA-1. Later attacks reduced the complexity to around 2^33 operations, leading to actual collisions in less than an hour for SHA-0.
-
-SHA-1 Internals
-
-SHA-1 combines a Merkle–Damgård hash function with a Davies–Meyer compression function based on a specially crafted block cipher. That is, SHA-1 works by iterating the following operation over 512-bit message blocks (M):
-
-HM = + E() , HH
-
-Here, the use of a plus sign (+) rather than ⊕ (XOR) is intentional. E(M, H) and H are viewed as arrays of 32-bit integers, and two words at the same position are added together: the first 32-bit word of E(M, H) with the first 32-bit word of H, and so on. The initial value of H is constant for any message, then H is modified as per the previous equation, and the final value of H after processing all blocks is returned as the hash of the message.
-
-Once the block cipher is run using the message block as a key and the current 160-bit chaining value as a plaintext block, the 160-bit result is seen as an array of five 32-bit words, each of which is added to its 32-bit counterpart in the initial H value.
-
-Listing 6-4 shows SHA-1’s compression function, SHA1-compress():
-
-SHA1-compress(H, M) {
- (a0, b0, c0, d0, e0) = H // Parsing H as five 32-bit big-endian words
- (a, b, c, d, e) = SHA1-blockcipher(a0, b0, c0, d0, e0, M)
- return (a + a0, b + b0, c + c0, d + d0, e + e0)
-}
-
-Listing 6-4: SHA-1’s compression function
-
-SHA-1’s block cipher SHA1-blockcipher(), shown in bold, takes a 512-bit message block, M, as a key and transforms the five 32-bit words (a, b, c, d, and e) by iterating 80 steps of a short sequence of operations to replace the word a with a combination of all five words. It then shifts the other words in the array, as in a shift register. Listing 6-5 describes these operations in pseudocode, where K[i] is a round-dependent constant.
-
-SHA1-blockcipher(a, b, c, d, e, M) {
- W = expand(M)
- for i = 0 to 79 {
- new = (a <<< 5) + f(i, b, c, d) + e + K[i] + W[i]
- (a, b, c, d, e) = (new, a, b >>> 2, c, d)
- }
- return (a, b, c, d, e)
-}
-
-Listing 6-5: SHA-1’s block cipher
-
-The expand() function in Listing 6-5 creates an array of 80 32-bit words, W, from the 16-word message block by setting W’s first 16 words to M and the subsequent ones to an XOR combination of previous words, rotated 1 bit to the left. Listing 6-6 shows the corresponding pseudocode.
-
-expand(M) {
- // The 512-bit M is seen as an array of sixteen 32-bit words.
- W = empty array of eighty 32-bit words
- for i = 0 to 79 {
- if i < 16 then W[i] = M[i]
- else
- W[i] = (W[i – 3] ⊕ W[i – 8] ⊕ W[i – 14] ⊕ W[i – 16]) <<< 1
- }
- return W
-}
-
-Listing 6-6: SHA-1’s expand() function
-
-The <<< 1 operation in Listing 6-6 is the only difference between the SHA-1 and the SHA-0 functions.
-
-Finally, Listing 6-7 shows the f() function in SHA1-blockcipher(), a sequence of basic bitwise logical operations (a Boolean function) that depends on the round number.
-
-f(i, b, c, d) {
- if i < 20 then return ((b & c) ⊕ (~b & d))
- if i < 40 then return (b ⊕ c ⊕ d)
- if i < 60 then return ((b & c) ⊕ (b & d) ⊕ (c & d))
- if i < 80 then return (b ⊕ c ⊕ d)
-}
-
-Listing 6-7: SHA-1’s f() function
-
-The second and fourth Boolean functions in Listing 6-7 simply XOR the three input words together, which is a linear operation. In contrast, the first and third functions use the nonlinear & operator (logical AND) to protect against differential cryptanalysis, which exploits the predictable propagation of bitwise difference. Without the & operator (in other words, if f() were always b ⊕ c ⊕ d, for example), SHA-1 would be easy to break by tracing patterns within its internal state.
-
-Attacks on SHA-1
-
-Though more robust than SHA-0, SHA-1 is also insecure, which is why the Chrome browser marks websites using SHA-1 in their HTTPS connection as insecure since 2014. Although its 160-bit hash should grant it 80-bit collision resistance, in 2005 researchers found weaknesses in SHA-1 and estimated that finding a collision would take approximately 2^63 calculations (against 2^80 if the algorithm were flawless). A real SHA-1 collision came only 12 years later when after years of research, cryptanalysts presented two colliding PDF documents through a joint work with Google researchers (see https://shattered.io).
-
-You should not use SHA-1. Most web browsers now mark SHA-1 as insecure, and SHA-1 is no longer recommended by NIST. Use SHA-2, SHA-3, BLAKE2, or BLAKE3 instead.
-
-SHA-2
-
-SHA-2, the successor to SHA-1, was designed by the NSA and standardized by NIST in 2002. SHA-2 is a family of four hash functions: SHA-224, SHA-256, SHA-384, and SHA-512 (of which SHA-256 and SHA-512 are the two main algorithms). The three-digit numbers represent the bit lengths of each hash. The initial motivation behind the development of SHA-2 was to generate longer hashes and thus deliver higher security levels than SHA-1.
-
-However, SHA-1 and SHA-2 algorithms are similar in their construction. All SHA-2 instances also use the Merkle–Damgård construction and have a compression function that closely resembles that of SHA-1 but with stronger nonlinearity and difference propagation properties.
-
-SHA-256
-
-SHA-256 is the most common version of SHA-2. Whereas SHA-1 has 160-bit chaining values, SHA-256 has 256-bit chaining values as eight 32-bit words. Both SHA-1 and SHA-256 have 512-bit message blocks, but whereas SHA-1 makes 80 rounds, SHA-256 makes 64 rounds, expanding the 16-word message block to a 64-word message block using the expand256() function, as Listing 6-8 shows.
-
-expand256(M) {
- // The 512-bit M is seen as an array of sixteen 32-bit words.
- W = empty array of sixty-four 32-bit words
- for i = 0 to 63 {
- if i < 16 then W[i] = M[i]
- else {
- // The ">>" shifts instead of a ">>>" rotates and is not a typo.
- s0 = (W[i – 15] >>> 7) ⊕ (W[i – 15] >>> 18) ⊕ (W[i – 15] >> 3)
- s1 = (W[i – 2] >>> 17) ⊕ (W[i – 2] >>> 19) ⊕ (W[i – 2] >> 10)
- W[i] = W[i – 16] + s0 + W[i – 7] + s1
- }
- }
- return W
-}
-
-Listing 6-8: SHA-256’s expand256() function
-
-Note how SHA-2’s expand256() message expansion is more complex than SHA-1’s expand() in Listing 6-6, which in contrast simply performs XORs and a 1-bit rotation. The main loop of SHA-256’s compression function is also more complex than that of SHA-1, performing 26 arithmetic operations per iteration compared to 11 for SHA-1. Again, these operations are XORs, logical ANDs, and word rotations. This greater complexity makes SHA-256 more resistant to differential cryptanalysis.
-
-Other SHA-2 Algorithms
-
-The SHA-2 family includes SHA-224, which is algorithmically identical to SHA-256 except that its initial value is a different set of eight 32-bit words, and its hash value length is 224 bits, instead of 256 bits, and is taken as the first 224 bits of the final chaining value.
-
-The SHA-2 family also includes the algorithms SHA-512 and SHA-384. SHA-512 is similar to SHA-256 except that it works with 64-bit words instead of 32-bit words. As a result, it uses 512-bit chaining values (eight 64-bit words) and ingests 1,024-bit message blocks (sixteen 64-bit words), and it makes 80 rounds instead of 64. The compression function is otherwise almost the same as that of SHA-256, though with different rotation distances to cope with the wider word size. (For example, SHA-512 includes the operation a >>> 34, which wouldn’t make sense with SHA-256’s 32-bit words.) SHA-384 is to SHA-512 what SHA-224 is to SHA-256—namely, the same algorithm but with a different initial value and a final hash truncated to 384 bits.
-
-Security-wise, all four SHA-2 versions have lived up to their promises so far: SHA-256 guarantees 256-bit preimage resistance, SHA-512 guarantees about 256-bit collision resistance, and so on. Still, there is no genuine proof that SHA-2 functions are secure; we’re talking about probable security.
-
-That said, after practical attacks on MD5 and on SHA-1, researchers and NIST grew concerned about SHA-2’s long-term security because of its similarity to SHA-1, and many believed that attacks on SHA-2 were just a matter of time. As I write this, we have yet to see a successful attack on SHA-2. Regardless, NIST developed a backup plan: SHA-3.
-
-The SHA-3 Competition
-
-Announced in 2007, the NIST Hash Function Competition (the official name of the SHA-3 competition) began with a call for submissions and some basic requirements: hash submissions were to be at least as secure and as fast as SHA-2, and they should be able to do at least as much as SHA-2. SHA-3 candidates also shouldn’t look too much like SHA-1 and SHA-2 to be immune to attacks that would break SHA-1 and potentially SHA-2. By 2008, NIST had received 64 submissions from around the world, including from universities and large corporations (BT, IBM, Microsoft, Qualcomm, and Sony, to name a few). Of these 64 submissions, 51 matched the requirements and entered the first round of the competition.
-
-During the first weeks of the competition, cryptanalysts mercilessly attacked the submissions. In July 2009, NIST announced 14 second-round candidates. After spending 15 months analyzing and evaluating the performance of these candidates, NIST chose five finalists:
-
-BLAKE  An enhanced Merkle–Damgård hash whose compression function is based on a block cipher, which is in turn based on the core function of the stream cipher ChaCha, a chain of additions, XORs, and word rotations. BLAKE was designed by a team of academic researchers based in Switzerland and the UK, including myself while I was a PhD student.  
-Grøstl  An enhanced Merkle–Damgård hash whose compression function uses two permutations (or fixed-key block ciphers) based on the AES block cipher. Grøstl was designed by a team of seven academic researchers from Denmark and Austria.  
-JH  A tweaked sponge function construction wherein message blocks are injected before and after the permutation rather than just before. The permutation also performs operations similar to a substitution–permutation block cipher (see Chapter 4). JH was designed by a cryptographer from a university in Singapore.  
-Keccak  A sponge function whose permutation performs only bitwise operations. Keccak was designed by a team of four cryptographers working for a semiconductor company based in Belgium and Italy and included one of the two designers of AES.  
-Skein  A hash function based on a different mode of operation than Merkle–Damgård and whose compression function is based on a novel block cipher that uses only integer addition, XORs, and word rotation. Skein was designed by a team of eight cryptographers from academia and industry, all but one of whom is based in the United States, including the renowned Bruce Schneier.
-
-After extensive analysis of the five finalists, NIST announced a winner: Keccak. NIST’s report rewarded Keccak for its “elegant design, large security margin, good general performance, excellent efficiency in hardware, and its flexibility.” Let’s see how Keccak works.
-
-Keccak (SHA-3)
-
-One of the reasons that NIST chose Keccak is that it’s completely different from SHA-1 and SHA-2. For one thing, it’s a sponge function. Keccak’s core algorithm is a permutation of a 1,600-bit state that ingests blocks of 1,152, 1,088, 832, or 576 bits, producing hash values of 224, 256, 384, or 512 bits, respectively—the same four lengths produced by SHA-2 hash functions. But unlike SHA-2, SHA-3 uses a single core algorithm rather than two algorithms for all four hash lengths.
-
-Another reason is that Keccak is more than just a hash. The SHA-3 standard document FIPS 202 defines four hashes—SHA3-224, SHA3-256, SHA3-384, and SHA3-512—and two algorithms called SHAKE128 and SHAKE256. (The name SHAKE stands for Secure Hash Algorithm with Keccak.) These two algorithms are extendable-output functions (XOFs), or hash functions that can produce hashes of variable length, even very long ones. The numbers 128 and 256 represent the security level of each algorithm.
-
-The FIPS 202 standard itself is lengthy and hard to parse, but you’ll find open source implementations that are reasonably fast and make the algorithm easy to understand. For example, the tiny_sha3 (https://github.com/mjosaarinen/tiny_sha3) by Markku-Juhani O. Saarinen explains Keccak’s core algorithm in 19 lines of C code, as partially reproduced in Listing 6-9.
-
-[code listing omitted]
-
-Listing 6-9: The tiny_sha3 implementation
-
-The tiny_sha3 program implements the permutation, P, of Keccak, an invertible transformation of a 1,600-bit state viewed as an array of twenty-five 64-bit words. The code iterates a series of rounds, where each round consists of four main steps:
-
-1. Theta 1 includes XORs between 64-bit words or a 1-bit rotated value of the words (the ROTL64(w, 1) operation left-rotates a word w of 1 bit).  
-2. Rho Pi 2 includes rotations of 64-bit words by constants hardcoded in the keccakf_rotc[] array.  
-3. Chi 3 includes more XORs but also logical ANDs (the & operator) between 64-bit words. These ANDs are the only nonlinear operations in Keccak, and they bring with them cryptographic strength.  
-4. Iota 4 includes an XOR with a 64-bit constant, hardcoded in keccakf_rndc[].
-
-These operations provide SHA-3 with a strong permutation algorithm free of any bias or exploitable structure. SHA-3 is the product of more than a decade of research, and hundreds of skilled cryptanalysts have failed to break it. It’s unlikely to be broken anytime soon.
-
-The BLAKE2 and BLAKE3 Hash Functions
-
-Security may matter most, but speed comes second. I’ve seen many cases where a developer wouldn’t switch from MD5 to SHA-1 simply because MD5 is faster or from SHA-1 to SHA-2 because SHA-2 is noticeably slower than SHA-1. Unfortunately, SHA-3 isn’t faster than SHA-2, and because SHA-2 is still secure, there are few incentives to upgrade to SHA-3. So how do we hash faster than SHA-1 and SHA-2 and be even more secure? The answer lies in the hash function BLAKE2, released after the SHA-3 competition.
-
-NOTE Full disclosure: I’m a designer of BLAKE2, together with Samuel Neves, Zooko Wilcox-O’Hearn, and Christian Winnerlein.
-
-BLAKE2 was designed with the following ideas in mind:
-
-• It should be at least as secure as SHA-3, if not stronger.  
-• It should be faster than all previous hash standards, including MD5.  
-• It should be suited for use in modern applications and able to hash large amounts of data either as a few large messages or as many small ones, with or without a secret key.  
-• It should be suited for use on modern CPUs supporting parallel computing on multicore systems as well as instruction-level parallelism within a single core.
-
-The outcome of the engineering process is a pair of main hash functions:
-
-• BLAKE2b (or just BLAKE2), optimized for 64-bit platforms, produces digests ranging from 1 to 64 bytes.  
-• BLAKE2s, optimized for 8- to 32-bit platforms, produces digests ranging from 1 to 32 bytes.
-
-Each function has a parallel variant that can leverage multiple CPU cores. The parallel counterpart of BLAKE2b, BLAKE2bp, runs on four cores, whereas BLAKE2sp runs on eight cores. The former is the fastest on modern server and laptop CPUs and can hash at close to 2Gbps on a laptop CPU. BLAKE2’s speed and features have made it the most popular non-NIST-standard hash. BLAKE2 is used in countless software applications and has been integrated into major cryptography libraries such as OpenSSL and Sodium. BLAKE2 is also an Internet Engineering Task Force (IETF) standard, described in RFC 7693.
-
-NOTE You can find BLAKE2’s specifications and reference code at https://blake2.net, and you can download optimized code and libraries from https://github.com/BLAKE2. The reference code also provides BLAKE2X, an extension of BLAKE2 that can produce hash values of arbitrary length.
-
-As Figure 6-8 illustrates, BLAKE2’s compression function is a variant of the Davies–Meyer construction that takes parameters as additional input—namely, a counter (which ensures that each compression function behaves like a different function) and a flag (which indicates whether the compression function is processing the last message block, for increased security).
+If Mn has fewer bits than a block, CMAC pads it with a 1 bit and 0s and returns E(K, Mn ⊕ Cn − 1 ⊕ K2) as a tag, as in Figure 7-4.
 
 image removed
 
-The block cipher in BLAKE2’s compression function is based on the stream cipher ChaCha, itself a variant of the Salsa20 stream cipher discussed in Chapter 5. Within this block cipher, BLAKE2b’s core operation is composed of the following chain of operations, which transforms a state of four 64-bit words using two message words, Mi and Mj:
+The first case uses only K1 and the second only K2, but both use the main key K to process the message chunks that precede the final one.
 
-[code listing omitted]
+Unlike the CBC encryption mode, CMAC doesn’t take an IV as a parameter and is deterministic: for the same key, CMAC always returns the same tag for a given message, M, because the computation of CMAC(M) isn’t randomized—and that’s fine because unlike encryption, MAC computation doesn’t have to be randomized to be secure, which eliminates the burden of having to choose random IV.
 
-BLAKE2s’s core operation is similar but works with 32-bit instead of 64-bit words (and thus uses different rotation values).
+Dedicated MAC Designs
 
-Last but not least, BLAKE3 is a more parallelizable, simpler, more versatile, and faster version of BLAKE2 that was presented in 2020 at the Real World Crypto conference. Designed by Jack O’Connor, Samuel Neves, Zooko Wilcox-O’Hearn, and myself, BLAKE3 has quickly become one of the most popular hash functions, thanks to its undeniable advantages. For more details, see https://github.com/BLAKE3-team/BLAKE3.
+You’ve seen how to recycle hash functions and block ciphers to build PRFs that are secure as long as their underlying hash or cipher is secure. Schemes such as HMAC and CMAC simply combine available hash functions or block ciphers to yield a secure PRF or MAC. Reusing available algorithms is convenient, but is it the most efficient approach?
+
+Intuitively, PRFs and MACs should require less work to be secure than unkeyed hash functions—their use of a secret key prevents attackers from playing with the algorithm because they don’t have the key. Also, PRFs and MACs expose only a short tag to attackers, unlike block ciphers, which expose a ciphertext as long as the message. Hence, PRFs and MACs shouldn’t need the maximum power of hash functions or block ciphers—this is the point of dedicated design, that is, algorithms created solely to serve as PRFs or MACs.
+
+The sections that follow focus on two such algorithms: Poly1305 and SipHash. I’ll explain their design principles and why they’re (most likely) secure.
+
+Poly1305
+
+The Poly1305 algorithm (pronounced poly-thirteen-o-five) was designed in 2005 by Daniel J. Bernstein (creator of the Salsa20 stream cipher from Chapter 5 and the ChaCha cipher that inspired the BLAKE and BLAKE2 hash functions from Chapter 6). Poly1305 is optimized to be superfast on modern CPUs, and as I write this, it’s one of the algorithms supported in TLS 1.3 and in OpenSSH, among many other applications. Unlike Salsa20, the design of Poly1305 is built on techniques dating back to the 1970s—namely, universal hash functions and the Wegman–Carter construction.
+
+Universal Hash Functions
+
+The Poly1305 MAC uses a universal hash function. Such a hash function is weaker than a cryptographic hash function but much faster. Universal hash functions don’t have to be collision resistant, for example.
+
+Like a PRF, a universal hash is parameterized by a secret key: given a message, M, and key, K, we’ll write UH(K, M) for the output of a universal hash function denoted UH. A universal hash function has only one security requirement: for any two messages M1 and M2, and a random key K, the probability that UH(K, M1) equals UH(K, M2) must be negligible. Unlike a PRF, a universal hash doesn’t need to be pseudorandom; there simply should be no pair (M1, M2) that gives the same hash for many different keys. Because their security requirements are easier to satisfy, universal hash functions require fewer operations and are considerably faster than PRFs.
+
+You can use a universal hash as a MAC to authenticate no more than one message, however. For example, consider the universal polynomial-evaluation hash used in Poly1305. (See the seminal 1974 article “Codes Which Detect Deception” by Edgar Gilbert, Jessie MacWilliams, and Neil Sloane for more on this notion.) This kind of polynomial-evaluation hash is parameterized by a prime number, p, and takes as input a key consisting of two numbers, R and K, in the range [1, p) and a message, M, consisting of n blocks (M1, M2, . . . , Mn). You then compute the output of the universal hash as follows:
+
+UH(R, K, M) = R + M1K + M2K^2 + M3K^3 + . . . + MnK^n mod p
+
+In this equation, the plus sign (+) denotes the addition of positive integers, Ki is the number K raised to the power i, and “mod p” denotes the reduction modulo p of the result (that is, the remainder of the division of the result by p; for example, 12 mod 10 = 2, 10 mod 10 = 0, 8 mod 10 = 8, and so on).
+
+Because you want the hashing operation to be as fast as possible, universal hash-based MACs often work with message blocks of 128 bits and with a prime number, p, that’s slightly larger than 2^128, such as 2^128 + 51. The 128-bit width allows for very fast implementations by efficiently using the 32- and 64-bit arithmetic units of common CPUs.
+
+Security Limitations
+
+Universal hashes have one weakness: because a universal hash securely authenticates only one message, an attacker could break the preceding polynomial-evaluation MAC by requesting the tags of only two messages. Specifically, they could request the tag for a message where all blocks are zero—M1 = M2 = . . . = 0—to obtain the tag UH(R, K, 0) = R, thus finding the secret value R. Alternatively, they could request the tags for a message where M1 = 1 and where M2 = M3 = . . . = 0 (whose tag is T = R + K), which allows them to find K by subtracting R from T. Now the attacker knows the whole key (R, K) and can forge MACs for any message.
+
+Fortunately, there’s a way to go from single-message security to multi-message security.
+
+Wegman–Carter MACs
+
+The trick to authenticating multiple messages using a universal hash function arrived thanks to IBM researchers Mark Wegman and Lawrence Carter and their 1981 paper “New Hash Functions and Their Use in Authentication and Set Equality.” The Wegman–Carter construction builds a MAC from a universal hash function and a PRF, using two keys, K1 and K2, and it returns
+
+MACU(K1, K2, M, N) = UH(K1, M) + PRF(K2, N),
+
+where N is a nonce that must be used at most once for each key, K2, and where PRF’s output is as large as that of the universal hash function UH. By adding these two values, PRF’s strong pseudorandom output masks the cryptographic weakness of UH. You can see this as the encryption of the universal hash’s result, where the PRF acts as a stream cipher and prevents the preceding attack by making it possible to authenticate multiple messages with the same key, K1.
+
+To recap, the Wegman–Carter construction UH(K1, M) + PRF(K2, N) gives a secure MAC if you assume the following:
+• UH is a secure universal hash.
+• PRF is a secure PRF.
+• Each nonce N is used only once for each key K2.
+• The output values of UH and PRF are long enough to ensure high enough security.
+
+Now let’s see how Poly1305 leverages the Wegman–Carter construction to build a secure and fast MAC.
+
+Poly1305-AES
+
+Poly1305 was initially proposed as Poly1305-AES, combining the Poly1305 universal hash with the AES block cipher. Poly1305-AES is much faster than HMAC-based MACs, or even than CMACs, since it computes only one block of AES and processes the message in parallel through a series of simple arithmetic operations.
+
+Given 128-bit K1, K2, and N and the message M, Poly1305-AES returns the following:
+
+Poly1305(K1, M) + AES(K2, N) mod 2^128
+
+The mod 2^128 reduction ensures that the result fits in 128 bits. Poly1305 parses the message M as a sequence of 128-bit blocks (M1, M2, . . . , Mn) and appends a 129th bit to each block’s most significant bit to make all blocks 129 bits long. (If the last block is smaller than 16 bytes, it’s padded with a 1 bit followed by 0 bits before the final 129th bit.) Next, Poly1305 evaluates the polynomial to compute the following:
+
+Poly1305(K1, M1, . . . , Mn) = M1 + M2K1 + M3K1^2 + . . . + MnK1^(n−1) mod (2^130 − 5)
+
+The result of this expression is an integer that’s at most 129 bits long. When you add this to the 128-bit value AES(K2, N), the result is reduced modulo 2^128 to produce a 128-bit MAC.
+
+NOTE I described the Wegman–Carter as using a PRF, but AES isn’t a PRF, it’s a pseudorandom permutation (PRP). However, that doesn’t matter because the Wegman–Carter construction works well with PRPs and PRFs. This is because if you’re given a function that’s either a PRF or a PRP, it’s hard to determine whether it’s a PRF or a PRP just by looking at the function’s output values. In other words, distinguishing a PRP from a PRF is computationally hard.
+
+The security analysis of Poly1305-AES (see “The Poly1305-AES Message-Authentication Code” at https://cr.yp.to/mac/poly1305-20050329.pdf) shows that Poly1305-AES is 128-bit secure as long as AES is a secure block cipher—and everything is implemented correctly, as with any cryptographic algorithm.
+
+You can combine the Poly1305 universal hash with algorithms other than AES. For example, Poly1305 was used with the stream cipher ChaCha (see RFC 7539, “ChaCha20 and Poly1305 for IETF Protocols”). There’s no doubt that Poly1305 will continue being used wherever a fast MAC is needed.
+
+Although Poly1305 is fast and secure, it has several downsides. For one, its polynomial evaluation is difficult to implement efficiently, especially in the hands of those unfamiliar with the associated mathematical notions. (See examples at https://github.com/floodyberry/poly1305-donna.) Second, on its own, it’s secure for only one message unless you use the Wegman–Carter construction. But in that case it requires a nonce, and if the nonce is repeated, the algorithm becomes insecure. Finally, Poly1305 is optimized for long messages, but it’s overkill if you process only small messages (say, fewer than 128 bytes). In such cases, SipHash is a good solution.
+
+SipHash
+
+I designed SipHash in 2012 with Dan Bernstein initially to address a noncryptographic problem: denial-of-service attacks on hash tables. Hash tables are data structures, notably used in programming languages to efficiently store elements internally. Prior to SipHash, hash tables relied on noncryptographic keyed hash functions for which collisions were often easy to find, which could be exploited to slow down the system and perform denial-of-service attacks. We observed that a PRF would address this problem and set out to design SipHash, a PRF suitable for hash tables. Because hash tables process mostly short inputs, SipHash is optimized for short messages. SipHash is a full-blown PRF and MAC that shines where most inputs are short.
+
+SipHash uses a trick that makes it more secure than basic sponge functions: instead of XORing message blocks only once before the permutation, SipHash XORs them before and after the permutation, as Figure 7-5 illustrates. The 128-bit key of SipHash is seen as two 64-bit words, K1 and K2, XORed to a 256-bit fixed initial state that’s seen as four 64-bit words. Next, the keys are discarded, and computing SipHash boils down to iterating through a core function called SipRound and then XORing message chunks to modify the four-word internal state. Finally, SipHash returns a 64-bit tag by XORing the four-state words together.
+
+image removed
+
+The SipRound function uses a bunch of XORs together with additions and word rotations to make the function secure. SipRound transforms a state of four 64-bit words (a, b, c, d) by performing the following operations, top to bottom. The operations on the left and on the right are independent and can be carried out in parallel:
+
+ab
+ba
+ = =
+=
+ = <<< ⊕ 13
+
+=
+=
+a
+cb a
+<<< 32
+d
+bc
+<<< =
+=
+17
+<
+
+Here, a += b is shorthand for a = a + b, and b <<< = 13 is shorthand for b = b <<< 13 (the 64-bit word b left-rotated 13 bits).
+
+These simple operations on 64-bit words are almost all you need to implement to compute SipHash—although you won’t have to implement it yourself. You can find readily available implementations in most languages, such as C, Go, Java, JavaScript, Python, and Rust.
+
+NOTE I wrote SipHash-x-y as the SipHash version, meaning it makes x SipRounds between each message block injection and then y rounds. More rounds require more operations, which slows down operations but also increases security. The default version is SipHash-2-4 (simply noted as SipHash), and it has so far resisted cryptanalysis. Note that I also defined SipHash128, a version of SipHash producing 128-bit tags.
+
+Many systems, such as the Rust language, the OpenBSD operating system, and the Bitcoin blockchain, use SipHash internally. The Linux kernel uses SipHash too and also uses HalfSipHash, “SipHash’s insecure younger cousin,” a smaller version with a 64-bit key and 32-bit output (see https://docs.kernel.org/security/siphash.html).
 
 How Things Can Go Wrong
 
-Despite their apparent simplicity, hash functions can cause major security troubles when used at the wrong place or in the wrong way—for example, when using weak checksum algorithms like CRCs instead of a crypto hash to check file integrity in applications transmitting data over a network. However, this weakness pales in comparison to others, which can cause total compromise in seemingly secure hash functions. You’ll see two examples of failures: the first one applies to SHA-1 and SHA-2 but not to BLAKE2 or SHA-3, whereas the second one applies to all four of these functions.
+Like ciphers and unkeyed hash functions, MACs and PRFs that are secure on paper can be vulnerable to attacks when used in a real setting. Let’s discuss two examples.
 
-The Length-Extension Attack
+Timing Attacks on MAC Verification
 
-Figure 6-9 shows the length-extension attack, which is the main threat to the Merkle–Damgård construction.
+Side-channel attacks target the implementation of a cryptographic algorithm rather than the algorithm itself. In particular, timing attacks use an algorithm’s execution time to determine secret information, such as keys, plaintext, and secret random values. Variable-time string comparison induces vulnerabilities not only in MAC verification but also in many other cryptographic and security functionalities.
 
-image removed
+MACs can be vulnerable to timing attacks when a remote system verifies tags in a period of time that depends on the tag’s value, thereby allowing an attacker to determine the correct message tag by trying many incorrect ones to determine the one that takes the longest amount of time to complete. The problem occurs when a server compares the correct tag with an incorrect one by comparing the two strings byte per byte, in order, until the bytes differ. For example, the Python code in Listing 7-1 compares two strings byte per byte, in variable time: if the first bytes differ, the function returns after only one comparison; if the strings x and y are identical, the function makes n comparisons against the length of the strings.
 
-Basically, if you know Hash(M) for some unknown message, M, composed of blocks M1 and M2 (after padding), you can determine Hash(M1 || M2 || M3) for any block, M3. Because the hash of M1 || M2 is the chaining value that follows immediately after M2, you can add another block, M3, to the hashed message, even though you don’t know the data that was hashed. What’s more, this trick generalizes to any number of blocks in the unknown message (M1 || M2 here) or in the suffix (M3).
+def compare_mac(x, y, n):
+    if len(x) != len(y):
+        return False
+    if len(x) != n:
+        return False
+    for i in range(n):
+        if x[i] != y[i]:
+            return False
+    return True
 
-The length-extension attack won’t affect most applications of hash functions, but it can compromise security if using the hash a bit too creatively. Unfortunately, SHA-2 hash functions are vulnerable to the length-extension attack, even though the NSA designed the functions and NIST standardized them while both were well aware of the flaw. This flaw could have been avoided simply by making the last compression function call different from all others (for example, by taking a 1 bit as an extra parameter while the previous calls take a 0 bit). That is what BLAKE2 does.
+Listing 7-1: A comparison of two n-byte strings, taking variable time
 
-Fooling Proof-of-Storage Protocols
+To demonstrate the vulnerability of the compare_mac() function, we’ll write a program that measures the execution time of 100,000 calls to compare_mac(), first with identical 16-character x and y values and then with x and y values that differ in their third byte. The latter comparison should take noticeably less time because compare_mac() compares fewer bytes than the identical x and y, as Listing 7-2 shows.
 
-Cloud computing applications use hash functions within proof-of-storage protocols—that is, protocols where a server (the cloud provider) proves to a client (a user of a cloud storage service) that the server does in fact store the files that it’s supposed to store on behalf of the client.
+from time import time
 
-In 2007, the paper “SafeStore: A Durable and Practical Storage System” (https://www.cs.utexas.edu/~lorenzo/papers/p129-kotla.pdf) by Ramakrishna Kotla, Lorenzo Alvisi, and Mike Dahlin proposed a proof-of-storage protocol to verify the storage of some file, M, as follows:
+MAC1 = 'abcdefghijklmnop'
+MAC2 = 'abXdefghijklmnop'
+TRIALS = 100000
 
-1. The client picks a random value, C, as a challenge.  
-2. The server computes Hash(M || C) as a response and sends the result to the client.  
-3. The client also computes Hash(M || C) and checks that it matches the value received from the server.
+def compare_mac(x, y, n):
+    if len(x) != len(y):
+        return False
+    if len(x) != n:
+        return False
+    for i in range(n):
+        if x[i] != y[i]:
+            return False
+    return True
 
-The premise of the paper is that the server shouldn’t be able to fool the client because if the server doesn’t know M, it can’t guess Hash(M || C). But there’s a catch: in reality, Hash is an iterated hash that processes its input block by block, computing intermediate chaining values between each block. For example, if Hash is SHA-256 and M is 512 bits long (the size of a block in SHA-256), the server can cheat. How? The first time the server receives M, it computes H1 = Compress(H0, M1), the chaining value obtained from SHA-256’s initial value, H0, and from the 512-bit M. It then records H1 in memory and discards M, at which point it no longer stores M.
+# Each call to compare_mac() will look at all 16 characters.
+start = time()
+for i in range(TRIALS):
+    compare_mac(MAC1, MAC1, len(MAC1))
+end = time()
+print("%0.5f" % (end-start))
 
-When the client sends a random value, C, the server computes Compress(H1, C), after adding the padding to C to fill a complete block, and returns the result as Hash(M || C). The client then believes that because the server returned the correct value of Hash(M || C), it holds the complete message—except that it may not, as you’ve seen.
+# Each call to compare_mac() will look at three characters.
+start = time()
+for i in range(TRIALS):
+    compare_mac(MAC1, MAC2, len(MAC1))
+end = time()
+print("%0.5f" % (end-start))
 
-This trick works for SHA-1, SHA-2, as well as SHA-3 and BLAKE2. The solution is simple: ask for Hash(C || M) instead of Hash(M || C).
+Listing 7-2: Measuring timing differences when executing compare_mac() from Listing 7-1
+
+On a MacBook Pro with an ARM M1 chip, an execution of the program in Listing 7-2 prints execution times of around 67 and 26 milliseconds, respectively. That difference is significant enough to identify what’s happening within the algorithm. Now move the difference to other offsets in the string, and you’ll observe different execution times for different offsets. If MAC1 is the correct MAC tag and MAC2 is the one tried by the attacker, you can easily identify the position of the first difference, which is the number of correctly guessed bytes.
+
+If execution time doesn’t depend on a secret timing, timing attacks won’t work, which is why implementers strive to write constant-time implementations—that is, code that takes exactly the same time to complete for any secret input value. For example, the C function in Listing 7-3 compares two buffers of size bytes in constant time: the temporary variable result is nonzero if and only if there’s a difference somewhere in the two buffers.
+
+int cmp_const(const void *a, const void *b, const size_t size)
+{
+    const unsigned char *_a = (const unsigned char *) a;
+    const unsigned char *_b = (const unsigned char *) b;
+    unsigned char result = 0;
+    size_t i;
+    for (i = 0; i < size; i++) {
+        result |= _a[i] ^ _b[i];
+    }
+    return result; /* Returns 0 if *a and *b are equal, nonzero otherwise */
+}
+
+Listing 7-3: A constant-time comparison of two buffers for safer MAC verification
+
+When Sponges Leak
+
+Permutation-based algorithms like SHA-3 and SipHash are simple, are easy to implement, and come with compact implementations, but they’re fragile in the face of side-channel attacks that recover a snapshot of the system’s state. For example, if a process can read the RAM and registers’ values at any time or read a core dump of the memory, an attacker can determine the internal state of SHA-3 in MAC mode, or the internal state of SipHash, and then compute the reverse of the permutation to recover the initial secret state. They can then forge tags for any message, breaking the MAC’s security.
+
+Fortunately, this attack won’t work against compression function–based MACs such as HMAC-SHA-256 and keyed BLAKE2 because the attacker requires a snapshot of memory at the exact time when the key is used. The upshot is that if you’re in an environment where parts of a process’s memory may leak, you can use a MAC based on a noninvertible transform compression function rather than on a permutation.

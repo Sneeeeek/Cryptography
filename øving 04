@@ -1,0 +1,96 @@
+Exercise 04: Symmetric Encryption
+0. XOR – getting up to speed: (use xor.py )
+keystream =
+b'\x8bW\xbb\x02\xfb.\xf6\x15\xe3L~\x82l\x07D\x01\x95\x9e9_G56\x16\xbb\xc6AK\xbfD\x01\x8d'
+ciphertxt =
+b'\xab}\x91(\xdbb\x93a\x97?\x15\xf0\tj0!\xe6\xf5K:,^\xf5\xae\xdc\xaa$k\x95n+\xad'
+What is the message?
+The message is coded as utf-8. So, the message must be decoded with str(msg,’utf-8’) to print
+properly.
+1. Is your Python environment up-to-date?
+import sys
+import cryptography
+from cryptography.hazmat.backends.openssl.backend import backend
+print()
+print("Python",sys.version,"\n")
+print(" Cryptography", cryptography.__version__)
+print(" "+backend.openssl_version_text())
+Then check with OpenSSL: https://openssl-library.org/source/index.html
+You’ll find the “latest” cryptography version number and info:
+- https://cryptography.io/en/latest/changelog/
+Your Python version should be “reasonably new”.
+2. In the book (p.62-63), there is an argument for the minimum block size. How much memory is
+required for a lookup table for 64-bit blocks? And, what about 128-bit blocks?
+3. What is the difference between a block cipher and a stream cipher?
+BTS4410 Exercises 2026
+4. What key sizes do you consider “large enough” for symmetric key encryption?
+5. Read chapter 4 in the book.
+6. How many rounds are there for the AES cipher? (look it up. Note: there are 3 different answers)
+7. What is an S-box?
+8. Should the S-box be a 1) linear function or 2) non-linear function?
+9. Who was Horst Feistel?
+10. What is the F function?
+11. What are KATs?
+• https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-
+Program/documents/aes/KAT_AES.zip
+12. Why should you check out the KATs?
+13. What do these abbreviations/acronyms mean:
+• ECB
+• CTR
+• CBC
+• GCM
+14. Is there an avalanche effect for block cipher? Explain.
+15. Why is it that one still can see Tux in the encrypted Tux picture? Explain.
+16. What is an “IV” and why is it used?
+BTS4410 Exercises 2026
+17. Does the IV need to be (explain):
+• Unique?
+• Unpredictable?
+• Random?
+• Secret?
+18. Check out the CBC_IV_recovery_example.py script. Can there be recovery for later blocks?
+19. Which of the mode-of-operations would you use? Explain.
+20. What is padding, and why is it necessary?
+21. How would you construct symmetric keys? Explain.
+22. What is the block size and key size of the DES algorithm?
+23. What is CTR and what are the benefits to using CTR?
+24. What kind of padding would you use for AES-CTR?
+25. CTR is a mode-of-operation for block ciphers. But is AES-CTR a block cipher (explain why/why not).
+26. Read chapter 5 in the book.
+27. What is the RC4 algorithm, and why should you not use it?
+28. What is WEP and how/why was it broken (Read the paper “Unsafe at any key size; An analysis of the
+WEP encapsulation” (it’s on canvas)).
+BTS4410 Exercises 2026
+29. What is Salsa20 and ChaCha20 (see the book and https://en.wikipedia.org/wiki/Salsa20)
+30. How is ChaCha and BLAKE related? (see https://en.wikipedia.org/wiki/Salsa20)
+31. The cryptography package supports the Blowfish algorithm. Should you use it? (why/why not)
+32. Counter-mode algorithms are quite popular – why is that? (explain)
+33. In a stream cipher, there is no separate decryption function. How do you then do decryption?
+34. For a stream cipher SC(), the keystream is only dependent on the key (K) and the nonce/initialization
+vector (N).
+• What are the rules if you want to encrypt different messages (plaintexts)?
+• Do you need to change the key during this process? (why/why not)
+• Does the key have to be secret?
+• Does the nonce have to be secret?
+35. The StreamCipher_Two_plaintexts_w_same_IV-KEY.py file illustrates a “known plaintext attack
+(KPA)” problem. Can this problem be prevented?
+Sure. DO NOT REUSE THE IV/NONCE!!!
+36. KPA: Read the article on KPA on Wikipedia: https://en.wikipedia.org/wiki/Known-plaintext_attack
+• What techniques were used by the British to get access to KP?
+37. Sad: IDEA (https://en.wikipedia.org/wiki/International_Data_Encryption_Algorithm)
+38. Even more sad: Crypto AG1 (https://en.wikipedia.org/wiki/Crypto_AG) – What was the problem?
+    1 Se også: https://www.digi.no/artikler/ledende-kryptoselskap-skal-i-hemmelighet-ha-vaert-eid-av-cia-og-bnd/485066
+
+
+--- (( SPECIAL EXERCISE )) ---
+39. Decrypting a secret message (Capture-the-Flag, Reverse Engineering)
+The task is to decrypt a secret message
+The software used for encrypting the secret message is uncovered: See SuperEncrypt.py
+So, our task is to attempt to decrypt the secret message in the file Ultra_encrypted_message.txt
+What we know:
+• The algorithm is based on “clever” use of hashes and hmac
+• It even includes a counter scheme
+• The designers were not cryptographers and may have made some serious mistakes
+• The scheme is also key-less (an amazing feat!)
+There is a small prize to be won for the first one (ones, max 2 persons) to decrypt the secret message.
+Instructions for how to claim the prize are contained in the encrypted text.
