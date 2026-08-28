@@ -5,7 +5,13 @@ SQN:    20f813bd 4141
 AMF:    61df
 OP:     3ffcfe5b 7b111158 9920d352 8e84e655
 
-
+f1:   24e8ed05 acbf8bd9 
+f1*:  be5210ac 3c790708 
+f2:   deb155d1 55e73ea1 
+f5:   d4e512f3 a39a
+f3:   e18ebc66 3fcca974 372d1e3f a32d279c
+f4:   d71ee1fe 75b1806d 5ffafb7c 2d31f08f
+f5*:  e7f185da 7329
 
 
 $	TEST SET 23 ; Extra-2026
@@ -13,7 +19,15 @@ K:      bf4548d4 a6176612 51ff96fd 2b5e5032
 RAND:   24dff9ce f3c9f890 e4d06e70 99903719
 SQN:    20f813bd 4141
 AMF:    61df
-OP:     3ffcfe5b 7b111158 9920d352 8e84e655
+OP:     
+
+f1:   ec090a03 079bf1c0 
+f1*:  5bad364b 8bfa900a 
+f2:   a79796f3 b44580d1 
+f5:   40950839 aeee
+f3:   43708484 92631c7e 83df6336 244c7455
+f4:   55cd3d9f ecd716e9 a65767ba 3d93bbd3
+f5*:  b4ba0d1c eb3d
 
 
 $	TEST SET 24 ; Extra-2026
@@ -23,10 +37,26 @@ SQN:    20f813bd 4141
 AMF:    61df
 OP:     3ffcfe5b 7b111158 9920d352 8e84e655
 
+f1:   96b26c41 6704313e 
+f1*:  7896929e 7d363753 
+f2:   8e2416f6 7553b961 
+f5:   147c2702 b900
+f3:   4d3e2765 6e82fe7d d9fe1a77 233f5c0b
+f4:   e88b6ec0 e765a173 6f0138e0 26d0695f
+f5*:  c4bce224 d294
+
 
 $	TEST SET 25 ; Extra-2026
 K:      a43bf7ef 2877c9b8 f9ac55c1 cca11f0b
 RAND:   1cb5df5a 70b079bc 5fd2c296 44475a87
 SQN:    20f813bd 4141
 AMF:    61df
-OP:     3ffcfe5b 7b111158 9920d352 8e84e655
+OP:     
+
+f1:   0a93c6a3 d9c59bb7 
+f1*:  245d506f 820b4dae 
+f2:   a7d625a2 bc331fef 
+f5:   e384202b dedb
+f3:   989d7f35 d0e4c060 42ddb5b8 58e4b49c
+f4:   ffa1a304 54ea698c 8d16619c 714ff59f
+f5*:  ec3518dc 413d
