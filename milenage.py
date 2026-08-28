@@ -142,6 +142,8 @@ if OUT5[:6] == test_f5_alt:
 else:
     print("F5_alt   Incorrect -    ", OUT5[:6])
 
+print("\n","-"*75,"\n")
+
 # Prints for easy copy paste to fill in the extra tests.
 print("f1:  ", b2a(OUT1[:8]))
 print("f1*: ", b2a(OUT1[8:]))
