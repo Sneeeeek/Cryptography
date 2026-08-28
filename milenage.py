@@ -37,7 +37,7 @@ def b2a(b: bytes | bytearray    ) -> str:
         while len(hexstr)>=8:
             hs = hs + hexstr[0:8] +" "
             hexstr = hexstr[8:]
-            hexstr = hs + hexstr
+        hexstr = hs + hexstr
 
     return(hexstr)
 
@@ -58,21 +58,22 @@ def rotate(rotNum: int, input: bytes) -> bytes:
     rotated = input[rotNum:]+input[0:rotNum]
     return bytes(rotated)
 
-# $ 	TEST SET 1 INPUTS
-# K:	465b5ce8 b199b49f aa5f0a2e e238a6bc
-# RAND:	23553cbe 9637a89d 218ae64d ae47bf35
-# SQN:	ff9bb4d0 b607
-# AMF:	b9b9
-# OP:	cdc202d5 123e20f6 2b6d676a c72cb318
-# OPc:	cd63cb71 954a9f4e 48a5994e 37a02baf
-
 # Inputs
-K =     a2b("465b5ce8 b199b49f aa5f0a2e e238a6bc")
-RAND =  a2b("23553cbe 9637a89d 218ae64d ae47bf35")
-SQN =   a2b("ff9bb4d0 b607")
-AMF =   a2b("b9b9")
-OP =    a2b("cdc202d5 123e20f6 2b6d676a c72cb318")
-OPc =   a2b("cd63cb71 954a9f4e 48a5994e 37a02baf")
+K =     a2b("90dca4ed a45b53cf 0f12d7c9 ff00ff00")
+RAND =  a2b("9fddc720 92c6ad03 6b6e4647 89315b78")
+SQN =   a2b("20f813bd 4141")
+AMF =   a2b("61df")
+OP =    a2b("3ffcfe5b 7b111158 9920d352 8e84e655")
+OPc =   a2b("a8bf85ac 76fd86e4 425239a6 17b856ae")
+
+# Test outputs
+test_f1 = a2b("e19dba10 8a939e67")
+test_f1_alt = a2b("2f5f6630 d19a267f")
+test_f2 = a2b("f4fe7be8 a616cfa2")
+test_f5 = a2b("7377d186 47f5")
+test_f3 = a2b("763e40ff 2edfc4d4 94db50c4 c4e03861")
+test_f4 = a2b("e0dcd466 6d9ada04 934c0409 25100bcc")
+test_f5_alt = a2b("ad27eb05 f61a")
 
 # Constants
 c1 = bytearray(16)
@@ -99,36 +100,13 @@ r5 = 96
 TEMP = E(K, xor(RAND,OPc))
 IN1 = SQN+AMF+SQN+AMF
 
-OUT1 = xor(OPc,E(K,xor(c1,xor(TEMP,rotate(r1,xor(OPc,IN1))))))
-OUT2 = xor(OPc,E(K,xor(c2,rotate(r2,xor(OPc,TEMP)))))
-OUT3 = xor(OPc,E(K,xor(c3,rotate(r3,xor(TEMP,OPc)))))
-OUT4 = xor(OPc,E(K,xor(c4,rotate(r4,xor(TEMP,OPc)))))
-OUT5 = xor(OPc,E(K,xor(c5,rotate(r5,xor(TEMP,OPc)))))
+OUT1 = xor(OPc, E(K, xor(c1, xor(TEMP, rotate(r1,xor(IN1, OPc))))))
+OUT2 = xor(OPc, E(K, xor(c2, rotate(r2, xor(TEMP, OPc)))))
+OUT3 = xor(OPc, E(K, xor(c3, rotate(r3, xor(TEMP, OPc)))))
+OUT4 = xor(OPc, E(K, xor(c4, rotate(r4, xor(TEMP, OPc)))))
+OUT5 = xor(OPc, E(K, xor(c5, rotate(r5, xor(TEMP, OPc)))))
 
-# OUT1  4a9ffac3 54dfafb3 01cfaf9e c4e871e9
-# OUT2  aa689c64 8370ac1e a54211d5 e3ba50bf
-# OUT3  b40ba9a3 c58b2a05 bbf0d987 b21bf8cb
-# OUT4  f769bcd7 51044604 12767271 1c6d3441
-# OUT5  451e8bec a43b78e0 f940c8db 54fd21c1
-
-# $ 	TEST SET 1 OUTPUTS
-# f1:	4a9ffac3 54dfafb3
-# f1*:	01cfaf9e c4e871e9
-# f2:	a54211d5 e3ba50bf
-# f5:	aa689c64 8370
-# f3:	b40ba9a3 c58b2a05 bbf0d987 b21bf8cb
-# f4:	f769bcd7 51044604 12767271 1c6d3441
-# f5*:	451e8bec a43b
-
-test_f1 = a2b("4a9ffac3 54dfafb3")
-test_f1_alt = a2b("01cfaf9e c4e871e9")
-test_f2 = a2b("a54211d5 e3ba50bf")
-test_f5 = a2b("aa689c64 8370")
-test_f3 = a2b("b40ba9a3 c58b2a05 bbf0d987 b21bf8cb")
-test_f4 = a2b("f769bcd7 51044604 12767271 1c6d3441")
-test_f5_alt = a2b("451e8bec a43b")
-
-# The number is +1 what youd expect because there is a space, which is +1 letter
+# Verification checks for if the output matches the test set.
 if OUT1[:8] == test_f1:
     print("F1       Correct -      ", OUT1[:8])
 else:
@@ -163,3 +141,12 @@ if OUT5[:6] == test_f5_alt:
     print("F5_alt   Correct -      ", OUT5[:6])
 else:
     print("F5_alt   Incorrect -    ", OUT5[:6])
+
+# Prints for easy copy paste to fill in the extra tests.
+print("f1:  ", b2a(OUT1[:8]))
+print("f1*: ", b2a(OUT1[8:]))
+print("f2:  ", b2a(OUT2[8:]))
+print("f5:  ", b2a(OUT2[:6]))
+print("f3:  ", b2a(OUT3))
+print("f4:  ", b2a(OUT4))
+print("f5*: ", b2a(OUT5[:6]))
