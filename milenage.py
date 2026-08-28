@@ -58,23 +58,6 @@ def rotate(rotNum: int, input: bytes) -> bytes:
     rotated = input[rotNum:]+input[0:rotNum]
     return bytes(rotated)
 
-# Inputs
-K =     a2b("90dca4ed a45b53cf 0f12d7c9 ff00ff00")
-RAND =  a2b("9fddc720 92c6ad03 6b6e4647 89315b78")
-SQN =   a2b("20f813bd 4141")
-AMF =   a2b("61df")
-OP =    a2b("3ffcfe5b 7b111158 9920d352 8e84e655")
-OPc =   xor(OP, E(K, OP))
-
-# Test outputs
-test_f1 = a2b("e19dba10 8a939e67")
-test_f1_alt = a2b("2f5f6630 d19a267f")
-test_f2 = a2b("f4fe7be8 a616cfa2")
-test_f5 = a2b("7377d186 47f5")
-test_f3 = a2b("763e40ff 2edfc4d4 94db50c4 c4e03861")
-test_f4 = a2b("e0dcd466 6d9ada04 934c0409 25100bcc")
-test_f5_alt = a2b("ad27eb05 f61a")
-
 # Constants
 c1 = bytearray(16)
 
@@ -97,58 +80,23 @@ r3 = 32
 r4 = 64
 r5 = 96
 
-TEMP = E(K, xor(RAND,OPc))
-IN1 = SQN+AMF+SQN+AMF
+def milenage(K, RAND, SQN, AMF, OP):
+    OPc = xor(OP, E(K, OP))
+    TEMP = E(K, xor(RAND,OPc))
+    IN1 = SQN+AMF+SQN+AMF
 
-OUT1 = xor(OPc, E(K, xor(c1, xor(TEMP, rotate(r1,xor(IN1, OPc))))))
-OUT2 = xor(OPc, E(K, xor(c2, rotate(r2, xor(TEMP, OPc)))))
-OUT3 = xor(OPc, E(K, xor(c3, rotate(r3, xor(TEMP, OPc)))))
-OUT4 = xor(OPc, E(K, xor(c4, rotate(r4, xor(TEMP, OPc)))))
-OUT5 = xor(OPc, E(K, xor(c5, rotate(r5, xor(TEMP, OPc)))))
+    OUT1 = xor(OPc, E(K, xor(c1, xor(TEMP, rotate(r1,xor(IN1, OPc))))))
+    OUT2 = xor(OPc, E(K, xor(c2, rotate(r2, xor(TEMP, OPc)))))
+    OUT3 = xor(OPc, E(K, xor(c3, rotate(r3, xor(TEMP, OPc)))))
+    OUT4 = xor(OPc, E(K, xor(c4, rotate(r4, xor(TEMP, OPc)))))
+    OUT5 = xor(OPc, E(K, xor(c5, rotate(r5, xor(TEMP, OPc)))))
 
-# Verification checks for if the output matches the test set.
-if OUT1[:8] == test_f1:
-    print("F1       Correct -      ", OUT1[:8])
-else:
-    print("F1       Incorrect -    ", OUT1[:8])
-
-if OUT1[8:] == test_f1_alt:
-    print("F1*      Correct -      ", OUT1[8:])
-else:
-    print("F1*      Incorrect -    ", OUT1[8:])
-
-if OUT2[8:] == test_f2:
-    print("F2       Correct -      ", OUT2[8:])
-else:
-    print("F2       Incorrect -    ", OUT2[8:])
-
-if OUT2[:6] == test_f5:
-    print("F5       Correct -      ", OUT2[:6])
-else:
-    print("F5       Incorrect -    ", OUT2[:6])
-
-if OUT3 == test_f3:
-    print("F3       Correct -      ", OUT3)
-else:
-    print("F3       Incorrect -    ", OUT3)
-
-if OUT4 == test_f4:
-    print("F4       Correct -      ", OUT4)
-else:
-    print("F4       Incorrect -    ", OUT4)
-
-if OUT5[:6] == test_f5_alt:
-    print("F5_alt   Correct -      ", OUT5[:6])
-else:
-    print("F5_alt   Incorrect -    ", OUT5[:6])
-
-print("\n","-"*75,"\n")
-
-# Prints for easy copy paste to fill in the extra tests.
-print("f1:  ", b2a(OUT1[:8]))
-print("f1*: ", b2a(OUT1[8:]))
-print("f2:  ", b2a(OUT2[8:]))
-print("f5:  ", b2a(OUT2[:6]))
-print("f3:  ", b2a(OUT3))
-print("f4:  ", b2a(OUT4))
-print("f5*: ", b2a(OUT5[:6]))
+    return {
+            "f1":  OUT1[:8],
+            "f1*": OUT1[8:],
+            "f2":  OUT2[8:],
+            "f5":  OUT2[:6],
+            "f3":  OUT3,
+            "f4":  OUT4,
+            "f5*": OUT5[:6],
+        }

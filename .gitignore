@@ -1,3 +1,5 @@
 book2txt/.env
 book2txt/output.txt
 book2txt/text.txt
+__pycache__
+CONFORMANCE_TEST_DATA_pure.txt
