@@ -73,14 +73,16 @@ c4[-1] = 0b00000100
 c5 = bytearray(16)
 c5[-1] = 0b00001000
 
-# Rotations
+# Rotation amounts
 r1 = 64
 r2 = 0
 r3 = 32
 r4 = 64
 r5 = 96
 
-def milenage(K, RAND, SQN, AMF, OP):
+def milenage(K: bytes, RAND: bytes, SQN: bytes, AMF: bytes, OP: bytes) -> dict[str, bytes]:
+    """The milenage encryption algorithm. 
+    Returns dictionary with f1, f1*, f2, f5, f3, f4, and f5*"""
     OPc = xor(OP, E(K, OP))
     TEMP = E(K, xor(RAND,OPc))
     IN1 = SQN+AMF+SQN+AMF
