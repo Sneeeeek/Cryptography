@@ -64,7 +64,7 @@ RAND =  a2b("9fddc720 92c6ad03 6b6e4647 89315b78")
 SQN =   a2b("20f813bd 4141")
 AMF =   a2b("61df")
 OP =    a2b("3ffcfe5b 7b111158 9920d352 8e84e655")
-OPc =   a2b("a8bf85ac 76fd86e4 425239a6 17b856ae")
+OPc =   xor(OP, E(K, OP))
 
 # Test outputs
 test_f1 = a2b("e19dba10 8a939e67")
