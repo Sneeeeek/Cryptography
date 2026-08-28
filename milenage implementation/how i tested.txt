@@ -1,0 +1,5 @@
+I tested it by making the testMilenage.py file, where i could easily test combos.
+For the 20 tests, i made a spreadsheet https://docs.google.com/spreadsheets/d/1qT5Uw7SLgi1RLOlfV0cF4XtgFoX7P0e9mOb2vXoejek/ and did some simple data cleaning and modificaitons on it so i could copy paste easily.
+You can see in teh spreadsheet i premade the variable names so i could just drop it in and run the script.
+You could write some file reading stuff, but tts only 20 tests and i can do bulk operations with sheets anyways so i just did the values manually. They all passed.   
+When testing the extra tests, i just commented out the verification checks part so it woudlnt complain.

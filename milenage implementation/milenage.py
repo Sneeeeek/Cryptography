@@ -83,16 +83,26 @@ r5 = 96
 def milenage(K: bytes, RAND: bytes, SQN: bytes, AMF: bytes, OP: bytes) -> dict[str, bytes]:
     """The milenage encryption algorithm. 
     Returns dictionary with f1, f1*, f2, f5, f3, f4, and f5*"""
+
+    # OPc is calculated using OP and K(ey)
     OPc = xor(OP, E(K, OP))
+
+    # TEMP is calcualted using the RAND and the previous OPc
     TEMP = E(K, xor(RAND,OPc))
+
+    # IN1 is just some of the inputs concatenated. 
     IN1 = SQN+AMF+SQN+AMF
 
+    # OUT1 is calcualted a bit differently from the others, as it also takes the IN1.
     OUT1 = xor(OPc, E(K, xor(c1, xor(TEMP, rotate(r1,xor(IN1, OPc))))))
+
+    # These are bsically the same just using differnt constants and rotation amounts.
     OUT2 = xor(OPc, E(K, xor(c2, rotate(r2, xor(TEMP, OPc)))))
     OUT3 = xor(OPc, E(K, xor(c3, rotate(r3, xor(TEMP, OPc)))))
     OUT4 = xor(OPc, E(K, xor(c4, rotate(r4, xor(TEMP, OPc)))))
     OUT5 = xor(OPc, E(K, xor(c5, rotate(r5, xor(TEMP, OPc)))))
 
+    # Return a dict with the bytes.
     return {
             "f1":  OUT1[:8],
             "f1*": OUT1[8:],
