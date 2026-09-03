@@ -1,675 +1,401 @@
-7: Keyed hashing
-
-The hash functions in Chapter 6 take a message and return its hash value—typically a
-short string of 256 or 512 bits. Anyone can
-compute the hash value of a message and verify
-that a particular message hashes to a particular value.
-When you want only specific people to compute hashes,
-however, you’ll hash with secret keys using keyed hash
-functions.
-Keyed hashing forms the basis of two types of cryptographic algorithms:
-message authentication codes (MACs), which authenticate a message and protect
-its integrity, and pseudorandom functions (PRFs), which produce randomlooking hash-sized values. We’ll look at the similarities between MACs and
-PRFs in the first section of this chapter before reviewing how MACs and
-PRFs work. Some MACs and PRFs are based on hash functions, some are
-based on block ciphers, and others are original designs. Finally, we’ll discuss examples of attacks on otherwise-secure MACs.
-7
-KEYED HASHING
-140   Chapter 7
-Message Authentication Codes
-A MAC protects a message’s integrity and authenticity by creating a value
-T = MAC(K, M), called the authentication tag of the message, M (often
-confusingly called the MAC of M). Just as you can decrypt a message if you
-know a cipher’s key, you can validate that a message hasn’t been modified if
-you know a MAC’s key.
-For example, say Alex and Bill share a key, K, and Alex sends a message,
-M, to Bill along with its authentication tag, T = MAC(K, M). Upon receiving the message and its authentication tag, Bill recomputes MAC(K, M)
-and checks that it’s equal to the authentication tag received. Because only
-Alex could have computed this value, Bill knows that the message wasn’t
-corrupted in transit (confirming its integrity), whether accidentally or maliciously, and that Alex sent that message (confirming its authenticity).
-MACs in Secure Communication
-Secure communication systems often combine a cipher and a MAC to protect a message’s confidentiality, integrity, and authenticity. For example, the
-protocols in Internet Protocol Security (IPsec), SSH, and TLS generate a
-MAC for each transmitted network packet.
-Not all communication systems use MACs. Sometimes an authentication tag can add unacceptable overhead to each packet, typically in the
-range of 64 to 128 bits. For example, the old GSM mobile telephony standard encrypted packets encoding voice calls but didn’t authenticate them.
-An attacker could modify the encrypted audio signal, and the recipient
-wouldn’t notice.
-Forgery and Chosen-Message Attacks
-What does it mean for a MAC to be secure? First, as with a cipher, the secret
-key should remain secret. If a MAC is secure, an attacker shouldn’t be able
-to create a tag of some message if they don’t know the key. We call a fabricated message/tag pair a forgery, and recovering a key is a specific case of
-a more general class of forgery attacks. The security notion that posits that
-forgeries should be impossible to find is unforgeability. It should also be
-impossible to recover the secret key from a list of tags; otherwise, attackers
-could forge tags using the key.
-What can an attacker do to break a MAC? In other words, what’s the
-attack model? The most basic attack model is the known-message attack,
-which passively collects messages and their associated tags (for example,
-by eavesdropping on a network). But real attackers can often launch active
-attacks because they can choose the messages to be authenticated and
-therefore get the MAC of the message they want. The standard model is
-thus chosen-message attacks, wherein attackers get tags for messages of their
-choice.
-Keyed Hashing   141
-Replay Attacks
-MACs aren’t safe from attacks involving replays of tags. For example, if you
-were to eavesdrop on Alex and Bill’s communications, you could capture
-a message and its tag sent by Alex to Bill and later send them again to Bill
-pretending to be Alex. To prevent such replay attacks, protocols include a
-message number in each message. This number is incremented for each
-new message and authenticated along with the message by the MAC. The
-receiving party gets messages numbered 1, 2, 3, 4, and so on. Thus, if an
-attacker tries to send message 1 again, the receiver notices that this message
-is out of order and that it’s a potential replay of the earlier message 1.
-Pseudorandom Functions
-A PRF uses a secret key to return PRF(K, M), such that the output looks
-random. Because the key is secret, the output values are unpredictable to
-an attacker.
-Unlike MACs, PRFs are not meant to be used on their own but as
-part of a cryptographic algorithm or protocol. For example, you can use
-PRFs to create block ciphers within the Feistel construction—see “How to
-Construct Block Ciphers” in Chapter 4. Key derivation schemes use PRFs
-to generate cryptographic keys from a master key or password, and identification schemes use PRFs to generate a response from a random challenge. (Basically, a server sends a random challenge message, M, and the
-client returns PRF(K, M) in its response to prove that it knows K.) The 5G
-telephony standard uses a PRF to authenticate a SIM card and its service
-provider, and a similar PRF generates the encryption key and MAC key
-to be used during a phone call. The TLS protocol uses a PRF to generate
-key material from a master secret as well as session-specific random values.
-There’s even a PRF in the noncryptographic hash() function built into the
-Python language to compare objects.
-PRF Security
-To be secure, a pseudorandom function should have no pattern that sets
-its outputs apart from truly random values. An attacker who doesn’t know
-the key, K, shouldn’t be able to distinguish the outputs of PRF(K, M) from
-random values. Viewed differently, an attacker shouldn’t have any means of
-knowing whether they’re talking to a PRF algorithm or to a random function.
-The erudite phrase for that security notion is “ indistinguishability from
-a random function.” (To learn more about the theoretical foundations of
-PRFs, see Volume 1, Section 3.6 of Goldreich’s Foundations of Cryptography.)
-PRFs Are Stronger Than MACs
-PRFs and MACs are keyed hashes, but PRFs are fundamentally stronger
-than MACs because MACs have weaker security requirements. Whereas you
-142   Chapter 7
-would consider a MAC secure if an attacker can’t forge tags—that is, if they
-can’t guess the MAC’s outputs—a PRF is secure only if its outputs are indistinguishable random strings. If you can’t distinguish a PRF’s outputs from
-random strings, this implies their values can’t be guessed; in other words,
-any secure PRF is also a secure MAC.
-The converse is not true, however: a secure MAC isn’t necessarily a
-secure PRF. For example, say you start with a secure PRF, PRF1, and you
-want to build a second PRF, PRF2, from it, like this:
-PRF2() () KM KM , = PRF1 , || 0
-Because PRF2’s output is defined as PRF1’s output followed by one
-0 bit, it doesn’t look as random as a true random string, and you can distinguish its outputs by that last 0 bit. Hence, PRF2 is not a secure PRF.
-However, because PRF1 is secure, PRF2 would still make a secure MAC. If
-you were able to forge a tag, T = PRF2(K, M), for some M, then you’d also
-be able to forge a tag for PRF1, which you know to be impossible in the first
-place because PRF1 is a secure MAC. Thus, PRF2 is a keyed hash that’s a
-secure MAC but not a secure PRF.
-But don’t worry: you won’t find such MAC constructions in real applications. In fact, many of the deployed or standardized MACs are also secure
-PRFs and are often used as either. For example, TLS uses the algorithm
-HMAC-SHA-256 both as a MAC and as a PRF.
-How to Create Keyed Hashes from Unkeyed Hashes
-Throughout cryptography’s history, MACs and PRFs have rarely been
-designed from scratch but rather have been built from existing algorithms,
-usually hash functions or block ciphers. It might seem obvious that you can
-produce a keyed hash function by feeding an (unkeyed) hash function a key
-and a message, but this is easier said than done.
-The Secret-Prefix Construction
-The first technique we’ll examine, the secret-prefix construction, turns a normal hash function into a keyed hash by prepending the key to the message
-and returning Hash(K || M). This approach is insecure when the hash function is vulnerable to length-extension attacks (see “The Length-Extension
-Attack” in Chapter 6) and when the hash supports keys of different lengths.
-Insecurity Against Length-Extension Attacks
-Recall from Chapter 6 that hash functions of the SHA-2 family allow
-attackers to compute the hash of a partially unknown message when given
-a hash of a shorter version of that message. In formal terms, the lengthextension attack allows attackers to compute Hash(K || M1 || M2
-) given
-only Hash(K || M1
-) and neither M1 nor K. These functions allow attackers
-to forge valid MAC tags for free because they shouldn’t be able to guess
-Keyed Hashing   143
-the MAC of M1 || M2 given only the MAC of M1. This fact makes the secretprefix construction insecure as a MAC and PRF when, for example, using
-it with SHA-256 or SHA-512. It’s a weakness of Merkle–Damgård to allow
-length-extension attacks, and none of the SHA-3 finalists do. The ability to
-thwart length-extension attacks was mandatory for SHA-3 submissions (see
-Chapter 6).
-Insecurity with Different Key Lengths
-The secret-prefix construction is also insecure when allowing the use
-of keys of different lengths. For example, if the key K is the 24-bit hexadecimal string 123abc and M is def00, then Hash() processes the value
-K || M = 123abcdef00. If K is instead the 16-bit string 123a and M is
-bcdef000, then Hash() processes K || M = 123abcdef00, too. Therefore,
-the result of the secret-prefix construction Hash(K || M) is the same for
-both keys.
-This problem is independent of the underlying hash; you can fix it by
-hashing the key’s length along with the key and the message—for example,
-by encoding the key’s bit length as a 16-bit integer, L, and then hashing
-Hash(L || K || M). You shouldn’t have to do this, however, as modern hash
-functions such as BLAKE2 and SHA-3 include a keyed mode that avoids
-these pitfalls and yields a secure PRF and thus a secure MAC as well.
-The Secret-Suffix Construction
-Instead of hashing the key before the message as in the secret-prefix construction, you can hash it after. And that’s exactly how the secret-suffix construction works by building a PRF from a hash function as Hash(M || K).
-Putting the key at the end makes quite a difference. The lengthextension attack that works against secret-prefix MACs won’t work against
-the secret suffix. Applying length extension to a secret-suffix MAC results
-in Hash(M1 || K || M2) from Hash(M1 || K), but this isn’t a valid attack
-because Hash(M1 || K || M2
-) isn’t a valid secret-suffix MAC; the key needs to
-be at the end.
-However, the secret-suffix construction is weaker against another type
-of attack. Say you’ve got a collision for the hash Hash(M1
-) = Hash(M2
-),
-where M1 and M2 are two distinct messages, possibly of different sizes.
-In the case of an M–D hash function such as SHA-256, this implies that
-Hash(M1 || P1 || K) and Hash(M2 || P2 || K) will be equal too, where P1
-and P2 are the padding data added to complete a block. After processing
-M1 || P1
-, the hash function’s state is the same as after processing M2 || P2.
-Adding K to each instance preserves the equality of the state, leading to a
-collision regardless of K’s value.
-To exploit this property, an attacker:
-1. Finds two colliding messages, M1 and M2
-2. Requests the MAC tag of M1
-, Hash(M1 || K)
-3. Guesses that Hash(M2 || K) is the same, thereby forging a valid tag and
-breaking the MAC’s security
-144   Chapter 7
-The HMAC Construction
-The hash-based MAC (HMAC) construction allows you to build a MAC
-from a hash function, which is more secure than either secret prefix or
-secret suffix. HMAC yields a secure PRF as long as the underlying hash
-is collision resistant, but even if that isn’t the case, HMAC still yields
-a secure PRF if the hash’s compression function is a PRF. The secure
-communication protocols IPsec, SSH, and TLS have all used HMAC.
-(You’ll find HMAC specifications in the NIST FIPS 198-1 standard and in
-RFC 2104.)
-HMAC uses a hash function, Hash, to compute a MAC tag, as Figure 7-1
-shows and according to the following expression:
-The value opad (outer padding) is the hexadecimal string 5c5c5c...5c as
-long as Hash’s block size. The key, K, is usually shorter than one block that’s
-filled with 00 bytes and XORed with opad. For example, if K is the 1-byte
-string 00, then K ⊕ opad = opad. (The same is true if K is the all-zero string
-of any length up to a block’s length.) K ⊕ opad is the first block processed by
-the outer call to Hash—namely, the leftmost Hash in the preceding equation, or the bottom hash in Figure 7-1.
-H Compress 0
-K ⊕ ipad
-H1’ Compress
-M
-H Compress 0
-K ⊕ opad
-H1 Compress HMAC-Hash(K, M)
-Figure 7-1: The HMAC hash-based MAC construction for a hash function based
-on a compression function
-The value ipad (inner padding) is a string (363636 . . . 36) as long as the
-Hash’s block size and completed with 00 bytes. The resulting block is the
-first processed by the inner call to Hash—namely, the rightmost Hash in
-the equation, or the top hash in Figure 7-1.
-NOTE The envelope method is a more secure construction than secret prefix or secret suffix.
-It’s expressed as Hash(K || M || K), a sandwich MAC, but it’s theoretically less
-secure than HMAC.
-Keyed Hashing   145
-If SHA-256 is the hash function used as Hash, then you call the HMAC
-instance HMAC-SHA-256. More generally, you call HMAC-Hash an HMAC
-instance using the hash function Hash. That means if someone asks you to
-use HMAC, you should always ask, “Which hash function?”
-A Generic Attack Against Hash-Based MACs
-There is one attack that works against all MACs based on an iterated hash
-function. Recall the attack in “The Secret-Suffix Construction” on page 143
-where we used a hash collision to get a collision of MACs. You can use the
-same strategy to attack a secret-prefix MAC or HMAC, though the consequences are less devastating.
-Figure 7-2 illustrates the secret-prefix MAC Hash(K || M).
-H Hashing . . . 0
-K
-H1 Compress
-M1
-MAC(K, M1 || M3)
-= MAC(K, M2 || M3)
-H2
-M3 (One or more blocks)
-Hashing . . .
-H Hashing . . . 0
-K
-H1 Compress
-M2
-Collision
-Figure 7-2: The principle of the generic forgery attack on hash-based MACs
-If the digest is n bits, you can find two messages, M1 and M2, such
-that Hash(K || M1
-) = Hash(K || M2
-), by requesting approximately 2n/2
-MAC tags to the system holding the key. (Recall the birthday attack from
-Chapter 6.) If the hash lends itself to length extension, as SHA-256 does,
-you can then use M1 and M2 to forge MACs by choosing some arbitrary
-data, M3, and then querying the MAC oracle for Hash(K || M1 || M3
-), which
-is the MAC of message M1 || M3. As it turns out, this is also the MAC of message M2 || M3 because the hash’s internal state of M1 and M3 and M2 and
-M3 is the same. You’ve successfully forged a MAC tag. (The effort becomes
-infeasible as n grows beyond, say, 128 bits.)
-This attack works even if the hash function isn’t vulnerable to length
-extension, and it works for HMAC, too. This is because all that’s required
-is an internal collision in the hash function and not necessarily in the
-complete hash. The cost of the attack depends on both the size of the
-chaining value and the MAC’s length: if a MAC’s chaining value is 512 bits
-and its tags are 128 bits, a 264 computation would find a MAC collision but
-probably not a collision in the internal state, since finding such a collision
-requires 2512/2 = 2256 operations on average.
-146   Chapter 7
-How to Create Keyed Hashes from Block Ciphers
-The compression functions in many hash functions are built on block
-ciphers (see Chapter 6). For example, HMAC-SHA-256 PRF is a series
-of calls to SHA-256’s compression function, which is a block cipher that
-repeats a sequence of rounds. In other words, HMAC-SHA-256 is a block
-cipher inside a compression function inside a hash inside the HMAC construction. So why not use a block cipher directly rather than build such a
-layered construction?
-Cipher-based MAC (CMAC) is such a construction: it creates a MAC
-given only a block cipher, such as AES. Though less popular than HMAC,
-CMAC is deployed in many systems, including the Internet Key Exchange
-(IKE) protocol, which is part of the IPsec suite. IKE, for example, generates
-key material using the AES-CMAC-PRF-128 construction as a core algorithm (or CMAC based on AES with 128-bit output). CMAC is specified in
-RFC 4493.
-Breaking CBC-MAC
-CMAC was designed in 2005 as an improved version of CBC-MAC, a simpler
-block cipher–based MAC derived from the cipher block chaining (CBC)
-block cipher mode of operation (see “Modes of Operation” in Chapter 4).
-CBC-MAC, the ancestor of CMAC, is simple: to compute the tag of a
-message, M, given a block cipher, E, encrypt M in CBC mode with an allzero initial value (IV) and discard all but the last ciphertext block. That is,
-compute
-C1 = E(K, M1
-), C2 = E(K, M2 ⊕ C1
-), C3 = E(K, M3 ⊕ C2
-)
-and so on for each of M’s blocks and keep only the last Ci
-—your CBC-MAC
-tag for M—simple, and simple to attack.
-To understand why CBC-MAC is insecure, consider the CBC-MAC tag,
-T1 = E(K, M1
-), of a single-block message, M1
-, and the tag, T2 = E(K, M2
-),
-of another single-block message, M2. Given these two pairs, (M1
-, T1
-) and
-(M2, T2
-), you can deduce that T2 is also the tag of the two-block message
-M1 || (M2 ⊕ T1
-). If you apply CBC-MAC to M1 || (M2 ⊕ T1
-) and compute
-C1 = E(K, M1
-) = T1 followed by C2 = E(K, (M2 ⊕ T1
-) ⊕ T1
-) = E(K, M2
-) = T2,
-you can create a third message/tag pair from two message/tag pairs without
-knowing the key. That is, you can forge CBC-MAC tags, thereby breaking
-CBC-MAC’s security.
-Fixing CBC-MAC
-CMAC fixes CBC-MAC by processing the last block using a different key
-from the preceding blocks. To do this, CMAC first derives two keys, K1 and
-K2, from the main key, K, such that K, K1
-, and K2 are distinct. CMAC processes the last block using either K1 or K2, while the preceding blocks use K.
-To determine K1 and K2, CMAC first computes a temporary value,
-L = E(0, K), where 0 acts as the key of the block cipher and K acts as the
-Keyed Hashing   147
-plaintext block. Then CMAC sets K1 to (L << 1) if L’s most significant bit
-(MSB) is 0 and to (L << 1) ⊕ 87 if L’s MSB is 1. (The hexadecimal number
-87, or 135 in decimal, is chosen for its mathematical properties when data
-blocks are 128 bits; a different value is needed when blocks aren’t 128 bits.)
-The key K2 is set to (K1 << 1) if K1
-’s MSB is 0 and to K2 = (K1 << 1) ⊕ 87
-otherwise.
-Given K1 and K2, CMAC works like CBC-MAC, except for the last block.
-If the final message chunk Mn is exactly the size of a block, CMAC returns
-E(K, Mn ⊕ Cn − 1 ⊕ K1
-) as a tag, as Figure 7-3 illustrates.
-EK
-M1
-EK
-M2
-EK
-M3
-K1
-T
-Figure 7-3: The CMAC block cipher–based
-MAC construction when the message is a
-sequence of integral blocks
-If Mn has fewer bits than a block, CMAC pads it with a 1 bit and 0s and
-returns E(K, Mn ⊕ Cn − 1 ⊕ K2
-) as a tag, as in Figure 7-4.
-EK
-M1
-EK
-M2
-EK
-M3 || 100 . . . 00
-K2
-T
-Figure 7-4: The CMAC block cipher–based
-MAC construction when the last block of
-the message has to be padded with 1 bit
-and zeros to fill a block
-The first case uses only K1 and the second only K2, but both use the
-main key K to process the message chunks that precede the final one.
-Unlike the CBC encryption mode, CMAC doesn’t take an IV as a
-parameter and is deterministic: for the same key, CMAC always returns the
-same tag for a given message, M, because the computation of CMAC(M)
-isn’t randomized—and that’s fine because unlike encryption, MAC computation doesn’t have to be randomized to be secure, which eliminates the
-burden of having to choose random IV.
-148   Chapter 7
-Dedicated MAC Designs
-You’ve seen how to recycle hash functions and block ciphers to build PRFs
-that are secure as long as their underlying hash or cipher is secure. Schemes
-such as HMAC and CMAC simply combine available hash functions or block
-ciphers to yield a secure PRF or MAC. Reusing available algorithms is convenient, but is it the most efficient approach?
-Intuitively, PRFs and MACs should require less work to be secure
-than unkeyed hash functions—their use of a secret key prevents attackers from playing with the algorithm because they don’t have the key. Also,
-PRFs and MACs expose only a short tag to attackers, unlike block ciphers,
-which expose a ciphertext as long as the message. Hence, PRFs and MACs
-shouldn’t need the maximum power of hash functions or block ciphers—
-this is the point of dedicated design, that is, algorithms created solely to serve
-as PRFs or MACs.
-The sections that follow focus on two such algorithms: Poly1305 and
-SipHash. I’ll explain their design principles and why they’re (most likely)
-secure.
-Poly1305
-The Poly1305 algorithm (pronounced poly-thirteen-o-five) was designed in
-2005 by Daniel J. Bernstein (creator of the Salsa20 stream cipher from
-Chapter 5 and the ChaCha cipher that inspired the BLAKE and BLAKE2
-hash functions from Chapter 6). Poly1305 is optimized to be superfast on
-modern CPUs, and as I write this, it’s one of the algorithms supported
-in TLS 1.3 and in OpenSSH, among many other applications. Unlike
-Salsa20, the design of Poly1305 is built on techniques dating back to
-the 1970s—namely, universal hash functions and the Wegman–Carter
-construction.
-Universal Hash Functions
-The Poly1305 MAC uses a universal hash function. Such a hash function is
-weaker than a cryptographic hash function but much faster. Universal hash
-functions don’t have to be collision resistant, for example.
-Like a PRF, a universal hash is parameterized by a secret key: given a
-message, M, and key, K, we’ll write UH(K, M) for the output of a universal
-hash function denoted UH. A universal hash function has only one security
-requirement: for any two messages M1 and M2, and a random key K, the
-probability that UH(K, M1
-) equals UH(K, M2
-) must be negligible. Unlike
-a PRF, a universal hash doesn’t need to be pseudorandom; there simply
-should be no pair (M1
-, M2
-) that gives the same hash for many different keys.
-Because their security requirements are easier to satisfy, universal hash functions require fewer operations and are considerably faster than PRFs.
-You can use a universal hash as a MAC to authenticate no more than
-one message, however. For example, consider the universal polynomialevaluation hash used in Poly1305. (See the seminal 1974 article “Codes
-Which Detect Deception” by Edgar Gilbert, Jessie MacWilliams, and Neil
-Keyed Hashing   149
-Sloane for more on this notion.) This kind of polynomial-evaluation hash
-is parameterized by a prime number, p, and takes as input a key consisting
-of two numbers, R and K, in the range [1, p) and a message, M, consisting
-of n blocks (M1
-, M2, . . . , Mn). You then compute the output of the universal
-hash as follows:
-UH RK MK MK MK MK p n
-n , , = + 12 +++ . . . + mod 2
-3
-3
-In this equation, the plus sign (+) denotes the addition of positive integers, Ki
- is the number K raised to the power i, and “mod p” denotes the
-reduction modulo p of the result (that is, the remainder of the division of
-the result by p; for example, 12 mod 10 = 2, 10 mod 10 = 0, 8 mod 10 = 8,
-and so on).
-Because you want the hashing operation to be as fast as possible, universal hash-based MACs often work with message blocks of 128 bits and
-with a prime number, p, that’s slightly larger than 2128, such as 2128 + 51. The
-128-bit width allows for very fast implementations by efficiently using the
-32- and 64-bit arithmetic units of common CPUs.
-Security Limitations
-Universal hashes have one weakness: because a universal hash securely
-authenticates only one message, an attacker could break the preceding
-polynomial-evaluation MAC by requesting the tags of only two messages.
-Specifically, they could request the tag for a message where all blocks are
-zero—M1 = M2 = . . . = 0—to obtain the tag UH(R, K, 0) = R, thus finding
-the secret value R. Alternatively, they could request the tags for a message
-where M1 = 1 and where M2 = M3 = . . . = 0 (whose tag is T = R + K), which
-allows them to find K by subtracting R from T. Now the attacker knows the
-whole key (R, K) and can forge MACs for any message.
-Fortunately, there’s a way to go from single-message security to multimessage security.
-Wegman–Carter MACs
-The trick to authenticating multiple messages using a universal hash function arrived thanks to IBM researchers Mark Wegman and Lawrence Carter
-and their 1981 paper “New Hash Functions and Their Use in Authentication
-and Set Equality.” The Wegman–Carter construction builds a MAC from a
-universal hash function and a PRF, using two keys, K1 and K2, and it returns
-MACU KK 12 , , , = HP () KM12 , + RF() KN,
-where N is a nonce that must be used at most once for each key, K2, and
-where PRF’s output is as large as that of the universal hash function UH.
-By adding these two values, PRF’s strong pseudorandom output masks the
-cryptographic weakness of UH. You can see this as the encryption of the
-universal hash’s result, where the PRF acts as a stream cipher and prevents
-150   Chapter 7
-the preceding attack by making it possible to authenticate multiple messages with the same key, K1.
-To recap, the Wegman–Carter construction UH(K1
-, M) + PRF(K2, N)
-gives a secure MAC if you assume the following:
-•	 UH is a secure universal hash.
-•	 PRF is a secure PRF.
-•	 Each nonce N is used only once for each key K2.
-•	 The output values of UH and PRF are long enough to ensure high
-enough security.
-Now let’s see how Poly1305 leverages the Wegman–Carter construction
-to build a secure and fast MAC.
-Poly1305-AES
-Poly1305 was initially proposed as Poly1305-AES, combining the Poly1305
-universal hash with the AES block cipher. Poly1305-AES is much faster than
-HMAC-based MACs, or even than CMACs, since it computes only one block
-of AES and processes the message in parallel through a series of simple
-arithmetic operations.
-Given 128-bit K1
-, K2, and N and the message M, Poly1305-AES returns
-the following:
-Poly1305 KM12 AES KN 128 () , + () , mod 2
-The mod 2128 reduction ensures that the result fits in 128 bits. Poly1305
-parses the message M as a sequence of 128-bit blocks (M1
-, M2, . . . , Mn) and
-appends a 129th bit to each block’s most significant bit to make all blocks
-129 bits long. (If the last block is smaller than 16 bytes, it’s padded with a
-1 bit followed by 0 bits before the final 129th bit.) Next, Poly1305 evaluates
-the polynomial to compute the following:
-Poly1305 KM MK MK MK nn
-11 12 1 n
-1
-1
-130 , . . . mod () = + ++ −
-The result of this expression is an integer that’s at most 129 bits long.
-When you add this to the 128-bit value AES(K2, N), the result is reduced
-modulo 2128 to produce a 128-bit MAC.
-NOTE I described the Wegman–Carter as using a PRF, but AES isn’t a PRF, it’s a pseudorandom permutation (PRP). However, that doesn’t matter because the Wegman–
-Carter construction works well with PRPs and PRFs. This is because if you’re given a
-function that’s either a PRF or a PRP, it’s hard to determine whether it’s a PRF of a
-PRP just by looking at the function’s output values. In other words, distinguishing a
-PRP from a PRF is computationally hard.
-The security analysis of Poly1305-AES (see “The Poly1305-AES MessageAuthentication Code” at https://cr.yp.to/mac/poly1305-20050329.pdf ) shows
-Keyed Hashing   151
-that Poly1305-AES is 128-bit secure as long as AES is a secure block cipher—
-and everything is implemented correctly, as with any cryptographic algorithm.
-You can combine the Poly1305 universal hash with algorithms other
-than AES. For example, Poly1305 was used with the stream cipher ChaCha
-(see RFC 7539, “ChaCha20 and Poly1305 for IETF Protocols”). There’s
-no doubt that Poly1305 will continue being used wherever a fast MAC is
-needed.
-Although Poly1305 is fast and secure, it has several downsides. For one,
-its polynomial evaluation is difficult to implement efficiently, especially in
-the hands of those unfamiliar with the associated mathematical notions.
-(See examples at https://github.com/floodyberry/poly1305-donna.) Second,
-on its own, it’s secure for only one message unless you use the Wegman–
-Carter construction. But in that case it requires a nonce, and if the nonce
-is repeated, the algorithm becomes insecure. Finally, Poly1305 is optimized
-for long messages, but it’s overkill if you process only small messages (say,
-fewer than 128 bytes). In such cases, SipHash is a good solution.
-SipHash
-I designed SipHash in 2012 with Dan Bernstein initially to address a noncryptographic problem: denial-of-service attacks on hash tables. Hash
-tables are data structures, notably used in programming languages to
-efficiently store elements internally. Prior to SipHash, hash tables relied
-on noncryptographic keyed hash functions for which collisions were often
-easy to find, which could be exploited to slow down the system and perform
-denial-of-service attacks. We observed that a PRF would address this problem and set out to design SipHash, a PRF suitable for hash tables. Because
-hash tables process mostly short inputs, SipHash is optimized for short messages. SipHash is a full-blown PRF and MAC that shines where most inputs
-are short.
-SipHash uses a trick that makes it more secure than basic sponge functions: instead of XORing message blocks only once before the permutation, SipHash XORs them before and after the permutation, as Figure 7-5
-illustrates. The 128-bit key of SipHash is seen as two 64-bit words, K1 and
-K2, XORed to a 256-bit fixed initial state that’s seen as four 64-bit words.
-Next, the keys are discarded, and computing SipHash boils down to iterating through a core function called SipRound and then XORing message
-chunks to modify the four-word internal state. Finally, SipHash returns a
-64-bit tag by XORing the four-state words together.
-152   Chapter 7
-SipRound
-C0
-SipRound
-SipRound
-SipRound
-SipRound
-SipRound
-SipRound
-SipRound
-C3
-C2
-C1
-K1 K2 M1 M2 ff
-K1 K2 M1 M2
-H
-Figure 7-5: SipHash-2-4 processing a 15-byte message (a block, M1, of
-8 bytes and a block, M2, of 7 bytes, plus 1 byte of padding)
-The SipRound function uses a bunch of XORs together with additions
-and word rotations to make the function secure. SipRound transforms a
-state of four 64-bit words (a, b, c, d) by performing the following operations,
-top to bottom. The operations on the left and on the right are independent
-and can be carried out in parallel:
-ab
-ba
- = =
-=
- =
-<<<
-⊕
-13
-
-=
- =
-a
-cb a
-<<< 32
-d
-bc
-<<< =
- =
-17
-<
-Here, a += b is shorthand for a = a + b, and b <<< = 13 is shorthand for
-b = b <<< 13 (the 64-bit word b left-rotated 13 bits).
-These simple operations on 64-bit words are almost all you need to
-implement to compute SipHash—although you won’t have to implement it
-yourself. You can find readily available implementations in most languages,
-such as C, Go, Java, JavaScript, Python, and Rust.
-NOTE I wrote SipHash-x-y as the SipHash version, meaning it makes x SipRounds between
-each message block injection and then y rounds. More rounds require more operations, which slows down operations but also increases security. The default version is
-SipHash-2-4 (simply noted as SipHash), and it has so far resisted cryptanalysis. Note
-that I also defined SipHash128, a version of SipHash producing 128-bit tags.
-Many systems, such as the Rust language, the OpenBSD operating system, and the Bitcoin blockchain, use SipHash internally. The Linux kernel
-uses SipHash too and also uses HalfSipHash, “SipHash’s insecure younger
-cousin,” a smaller version with a 64-bit key and 32-bit output (see https://docs
-.kernel.org/security/siphash.html).
-Keyed Hashing   153
-How Things Can Go Wrong
-Like ciphers and unkeyed hash functions, MACs and PRFs that are secure
-on paper can be vulnerable to attacks when used in a real setting. Let’s discuss two examples.
-Timing Attacks on MAC Verification
-Side-channel attacks target the implementation of a cryptographic algorithm
-rather than the algorithm itself. In particular, timing attacks use an algorithm’s execution time to determine secret information, such as keys, plaintext, and secret random values. Variable-time string comparison induces
-vulnerabilities not only in MAC verification but also in many other cryptographic and security functionalities.
-MACs can be vulnerable to timing attacks when a remote system
-verifies tags in a period of time that depends on the tag’s value, thereby
-allowing an attacker to determine the correct message tag by trying many
-incorrect ones to determine the one that takes the longest amount of time
-to complete. The problem occurs when a server compares the correct tag
-with an incorrect one by comparing the two strings byte per byte, in order,
-until the bytes differ. For example, the Python code in Listing 7-1 compares
-two strings byte per byte, in variable time: if the first bytes differ, the function returns after only one comparison; if the strings x and y are identical,
-the function makes n comparisons against the length of the strings.
-def compare_mac(x, y, n):
- if len(x) != len(y):
- return False
- if len(x) != n:
- return False
- for i in range(n):
- if x[i] != y[i]:
- return False
- return True
-Listing 7-1: A comparison of two n-byte strings, taking variable time
-To demonstrate the vulnerability of the compare_mac() function, we’ll
-write a program that measures the execution time of 100,000 calls to
-compare_mac(), first with identical 16-character x and y values and then with
-x and y values that differ in their third byte. The latter comparison should
-take noticeably less time because compare_mac() compares fewer bytes than
-the identical x and y, as Listing 7-2 shows.
-from time import time
-MAC1 = 'abcdefghijklmnop'
-MAC2 = 'abXdefghijklmnop'
-TRIALS = 100000
-def compare_mac(x, y, n):
- if len(x) != len(y):
- return False
-154   Chapter 7
- if len(x) != n:
- return False
- for i in range(n):
- if x[i] != y[i]:
- return False
- return True
-# Each call to compare_mac() will look at all 16 characters.
-start = time()
-for i in range(TRIALS):
- compare_mac(MAC1, MAC1, len(MAC1))
-end = time()
-print("%0.5f" % (end-start))
-# Each call to compare_mac() will look at three characters.
-start = time()
-for i in range(TRIALS):
- compare_mac(MAC1, MAC2, len(MAC1))
-end = time()
-print("%0.5f" % (end-start))
-Listing 7-2: Measuring timing differences when executing compare_mac() from Listing 7-1
-On a MacBook Pro with an ARM M1 chip, an execution of the program
-in Listing 7-2 prints execution times of around 67 and 26 milliseconds,
-respectively. That difference is significant enough to identify what’s happening within the algorithm. Now move the difference to other offsets in the
-string, and you’ll observe different execution times for different offsets. If
-MAC1 is the correct MAC tag and MAC2 is the one tried by the attacker, you can
-easily identify the position of the first difference, which is the number of
-correctly guessed bytes.
-If execution time doesn’t depend on a secret timing, timing attacks
-won’t work, which is why implementers strive to write constant-time
-implementations—that is, code that takes exactly the same time to complete
-for any secret input value. For example, the C function in Listing 7-3 compares two buffers of size bytes in constant time: the temporary variable result
-is nonzero if and only if there’s a difference somewhere in the two buffers.
-int cmp_const(const void *a, const void *b, const size_t size)
-{
- const unsigned char *_a = (const unsigned char *) a;
- const unsigned char *_b = (const unsigned char *) b;
- unsigned char result = 0;
- size_t i;
- for (i = 0; i < size; i++) {
- result |= _a[i] ^ _b[i];
- }
- return result; /* Returns 0 if *a and *b are equal, nonzero otherwise */
-}
-Listing 7-3: A constant-time comparison of two buffers for safer MAC verification
-Keyed Hashing   155
-When Sponges Leak
-Permutation-based algorithms like SHA-3 and SipHash are simple, are easy
-to implement, and come with compact implementations, but they’re fragile
-in the face of side-channel attacks that recover a snapshot of the system’s
-state. For example, if a process can read the RAM and registers’ values at
-any time or read a core dump of the memory, an attacker can determine
-the internal state of SHA-3 in MAC mode, or the internal state of SipHash,
-and then compute the reverse of the permutation to recover the initial
-secret state. They can then forge tags for any message, breaking the MAC’s
-security.
-Fortunately, this attack won’t work against compression function–based
-MACs such as HMAC-SHA-256 and keyed BLAKE2 because the attacker
-requires a snapshot of memory at the exact time when the key is used.
-The upshot is that if you’re in an environment where parts of a process’s
-memory may leak, you can use a MAC based on a noninvertible transform
-compression function rather than on a permutation.
+October 2000 doc.: IEEE 802.11-00/362
+Submission page 1 Jesse Walker, Intel Corporation
+IEEE P802.11
+Wireless LANs
+Unsafe at any key size; An analysis of the WEP encapsulation
+Date: Oct 27, 2000
+Author: Jesse R. Walker
+Intel Corporation
+2211 NE 25th Avenue
+Hillsboro, Oregon 97124
+Phone: +1 503 712 1849
+Fax: +1 503 264 4843
+e-Mail: jesse.walker@intel.com
+Abstract
+The IEEE 802.11 standard [1] defines the Wired Equivalent Privacy, or WEP, encapsulation of 802.11 data frames.
+The goal of WEP is to provide data privacy to the level of a wired network.
+The 802.11 design community generally concedes that the WEP encapsulation fails to meet its design goal, but
+widely attributes this failure to WEP’s use of 40-bit RC4 (see [2] or [3] for a description of RC4) as its encryption
+mechanism. Even at this late date, it is still repeatedly suggested, asserted, and assumed that WEP could meet its
+design goal by migrating from 40-bit to 104- or 128-bit RC4 keys instead.
+This report seeks dispel this notion once and for all: it is infeasible to achieve privacy with the WEP encapsulation
+by simply increasing key size. The submission reports easily implemented, practical attacks against WEP that
+succeed regardless of the key size or the cipher. In particular, as currently defined, WEP’s usage of encryption is a
+fundamentally unsound construction; the WEP encapsulation remains insecure whether its key length is 1 bit or
+1000 or any other size whatsoever, and the same remains true when any other stream cipher replaces RC4. The
+weakness stems from WEP’s usage of its initialization vector. This vulnerability prevents the WEP encapsulation
+from providing a meaningful notion of privacy at any key size.
+The deficiency of the WEP encapsulation design arises from attempts to adapt RC4 to an environment for which it is
+poorly suited. This submission accordingly argues to replace RC4 by different cryptographic primitives in new work
+going forward. It identifies the characteristics needed by any encryption algorithm that can effectively provide data
+privacy in a wireless environment, and recommends candidate replacement algorithms and a replacement
+encapsulation.
+October 2000 doc.: IEEE 802.11-00/362
+Submission page 2 Jesse Walker, Intel Corporation
+1 Introduction
+The IEEE 802.11 standard [1] defines the Wired Equivalent Privacy, or WEP, encapsulation of 802.11 data frames.
+The goal of WEP is to provide data privacy to the level of a wired network.
+The 802.11 design community generally concedes that the WEP encapsulation fails to meet its design goal, but
+widely attributes this failure to WEP’s use of 40-bit RC4 (see [2] or [3] for a description of RC4) as its encryption
+mechanism. Even at this late date, it is still repeatedly suggested, asserted, and assumed that WEP could meet its
+design goal by migrating from 40-bit to 104- or 128-bit RC4 keys instead.
+This report seeks dispel this notion once and for all: it is infeasible to achieve privacy with the WEP encapsulation
+by simply increasing key size. The submission reports easily implemented, practical attacks against WEP that
+succeed regardless of the key size or the cipher. In particular, as currently defined, WEP’s usage of encryption is a
+fundamentally unsound construction; the WEP encapsulation remains insecure whether its key length is 1 bit or
+1000 or any other size whatsoever, and the same remains true when any other stream cipher replaces RC4. The
+weakness stems from WEP’s usage of its initialization vector. This vulnerability prevents the WEP encapsulation
+from providing a meaningful notion of privacy at any key size.
+The deficiency of the WEP encapsulation design arises from attempts to adapt RC4 to an environment for which it is
+poorly suited. This submission accordingly argues to replace RC4 by different cryptographic primitives in new work
+going forward. It identifies the characteristics needed by any encryption algorithm that can effectively provide data
+privacy in a wireless environment, and recommends candidate replacement algorithms and a replacement
+encapsulation.
+This submission only discusses WEP’s inability to correctly encrypt data. It is well known that encryption without
+data authentication is unsafe in a network. Very simple data modification attacks (e.g., modifications of DNS
+responses to redirect TCP/IP implementations to rogue web sites) exist against WEP, and these can be trivially
+implemented when one of the attacks enumerated below succeed against even a single packet. Therefore, any
+changes to the WEP encapsulation should also incorporate a keyed message authentication code to protect the
+encrypted data stream, even though this report doesn’t focus on this aspect of WEP.
+Little in this submission is original. Almost all of the reasoning already appears in some form in [2], [3], [4], and [5].
+The remainder of this submission is organized as follows. Clause 2 reviews the WEP architecture. Clause 3
+describes attacks to recover the key stream of any stream cipher as used by WEP, regardless of the cipher strength or
+key size. Clause 4 specializes the discussion to RC4 and identifies a number of problems making it unsuitable for
+the 802.11 environment. Finally Clause 5 summarizes the discussion by identifying more suitable cryptographic
+primitives and a better encapsulation scheme.
+2 WEP overview
+IEEE 802.11 defines a mechanism for encrypting the contents of 802.11 data frames. This scheme uses five
+elements directly relevant to its analysis:
+a) A key shared between all the members of the BSS (there are really four shared keys, but this is irrelevant to the
+analysis).
+b) An encryption algorithm. For WEP this is the RC4 stream cipher, used to generate a key stream, which is
+XORed against plaintext to produce ciphertext.
+c) The corresponding decryption algorithm. For WEP this is the same as the encryption algorithm. RC4 is used to
+generate a key stream, which is XORed against the ciphertext to reproduce plaintext.
+d) A 24-bit initialization vector, or IV. WEP appends the IV to the shared key; WEP uses this combined key and
+IV to generate the RC4 key schedule. WEP selects a new IV for every packet.
+e) An encapsulation that transports the IV and the ciphertext from the sender (encryptor) to the receiver
+(decryptor).
+f) WEP also uses a CRC of the frame payload plaintext in its encapsulation. The CRC is computed over the data
+payload and then appended to the payload before encryption. WEP encrypts the CRC with the rest of the data
+payload.
+The operation of WEP is very simple to describe.
+First, each member of the BSS is initialized with the shared key via an unspecified, implementation specific, out-of-
+band mechanism.
+October 2000 doc.: IEEE 802.11-00/362
+Submission page 3 Jesse Walker, Intel Corporation
+To send a WEP encapsulated frame, the sender calculates the CRC of the frame payload and appends it to the frame.
+It then selects a new IV, appends this to the shared key to form a “per-packet” key, and uses the result to generate an
+RC4 key schedule. The sender then uses RC4 to generate a key stream equal to the length of the frame payload plus
+CRC. The sender XORs the generated key stream against the plaintext payload data and CRC. The sender also
+inserts the IV into the appropriate field in the frame header, and sets a bit indicating this is a WEP encrypted packet.
+At this point, the WEP encapsulation is complete, and the frame can be sent to the peer.
+To process a WEP frame, the receiver checks the “encrypted” bit in the arriving frame. If it is set, the receiver
+extracts the IV from the frame, appends it to the BSS shared key, and generates the “per-packet” RC4 key schedule.
+RC4 is applied to the key schedule to produce a key stream the length of the packet’s encrypted payload. The
+receiver then XORs this key stream against the encrypted payload to extract plaintext. Finally the receiver verifies
+the CRC of the decrypted payload data to verify that the frame data correctly decrypted.
+Several features of this design require comment.
+The first is that the loss of a single bit of a data stream encrypted under RC4 causes the loss of all the data following
+the lost bit. This is because data loss desynchronizes the RC4 encryption and decryption engines. The
+resynchronization problem gets only worse as more bits become lost. Since 802.11 often drops entire packets, it
+infeasible to use a stream ciphers like RC4 across 802.11 frame boundaries. To be useful across packet boundaries,
+this environment instead requires that the cipher support a random access, “seek” type capability, where it is feasible
+to instantly and efficiently switch the cipher to any selected point in the key stream. Many stream ciphers offer
+random access support—any block cipher such as AES [8] in counter mode, for instance, or SEAL [9] for another.
+Instead of selecting a stream cipher with characteristics needed for a datagram environment, however, the WEP
+architecture accommodates itself to loss by reinitializing the cipher key schedule on every data frame.
+Stream ciphers have a second property that is particularly important to the analysis: it is unsafe to use the same key
+twice, ever. Suppose the cipher produces a key stream of bits
+k1 k2 k3…
+The encryptor uses the key stream sequence to encrypt the plaintext stream p1 p2 p3… into a ciphertext stream c1 c2
+c3 … by XORing each plaintext bit with the corresponding key stream bit:
+ci = pi ⊕ ki, for i = 1, 2, 3, …
+(Most practical implementations actually XOR whole bytes or words instead of bits.) The decryptor recovers the
+plaintext stream from the ciphertext stream by XORing each ciphertext bit with the corresponding key stream bit:
+pi = ci ⊕ ki, for i = 1, 2, 3, … (*)
+The cipher stream is public knowledge, and it is presumed that adverasries will record the entire stream. If an
+adversary learns the plaintext value of bit i, she can recover the corresponding plaintext value of any other ciphertext
+stream encrypted from the same key stream: first compute the key stream bit
+ki = ci ⊕ pi
+and then use equation (*) to decrypt the corresponding bit of any other stream encrypted under the same key.
+The WEP design attempts to accommodate this second property by introducing the IV. WEP combines the IV with
+the key to produce a new frame specific encryption key.
+3 Decrypting data without keys
+This clause begins by describing problems with the WEP IV. Then it turns to practical techniques to recover the
+WEP RC4 key stream, based on the WEP IV deficiencies. Finally it closes with a discussion of some issues around
+the analysis.
+3.1 WEP IV problems
+The WEP IV is 24 bits long. WEP appends the IV to the shared key to form a family of 224 keys. As described
+above, each frame transmission selects one of these 224 keys and encrypts the data under the key.
+This scheme suffers from a basic problem. Since a stream cipher key stream can never be reused, it obliges the BSS
+to change the base key as soon as its members have consumed all of the 224 keys derived from the base key. WEP
+defines no practical way to accomplish this, so in practice WEP keys are not replaced frequently enough to maintain
+the level of privacy intended. This leads to wide-spread key abuse; a single access point BSS running at 11 Mbps
+October 2000 doc.: IEEE 802.11-00/362
+Submission page 4 Jesse Walker, Intel Corporation
+and with a typical packet distribution can exhaust the derived key space in about an hour. A multi- access point
+network with tens or hundreds or thousands of access points can exhaust the key space at a faster rate, indeed,
+inversely proportional to the number of access points.
+The problem is worse than this suggests, however. Since WEP shares the same base key among all the members of
+the BSS, and since the security of WEP depends on the <base-key, IV> pair never being recycled, WEP needs an IV
+avoidance algorithm, to prevent one node from reusing an IV already used by another. WEP defines no such
+algorithm, and it is unclear how to even begin to design one. A BSS could, for instance, partition the IV space
+among the BSS elements in a pre-defined manner, but this sort scheme either pre-supposes a static BSS membership
+static behavior, or some (secure) scheme to transfer an indication of which IVs have been used among members of
+the BSS, etc.
+The usual way to avoid this kind of difficulty is to randomly select the IV instead. Random selection of the IV,
+however, presents its own difficulties because of the Birthday Paradox (see [2] or [3]). The Birthday Paradox is
+named for the counter-intuitive fact that, in a group of people as small as 23, there is a 50% chance that two
+members of the group will share the same birthday. In general, if a set has n members, and elements are selected
+from the set one at a time with replacement, then the probability of a duplicate after two draws is p2 = 1/n and, for k
+≥ 3, the probability of at least one duplicate is pk = pk–1 + (k–1) ⋅ 1/n ⋅ (1 – pk–1).
+In the WEP case the IV space takes n = 224, and we exceed a 50% chance of a collision among IVs after only k =
+4823 ≈ 212 frames. The probability of collision is already 99% after 12,430 frames, or in 2 to 3 seconds of normal
+traffic at 11 Mbps. There is already a 10% chance of collision after 1881 frames, a 1% chance after 582, a 0.1% after
+184 frames, 0.01% after 59, and 0.001% after only 19 frames. With randomly selected IVs, maintaining the five
+zeroes of assurance (0.000001%) becoming customary in many fields of computing requires changing the base key
+after all the members of a BSS have transmitted a total 6 frames under the key! The odds are a normal 11 Mbps BSS
+will begin to reuse keys in less than a second of operation, and there is a non-negligible probability that an attack
+can succeed well before this time has elapsed. The WEP IV space is far, far too small to protect against IV abuse.
+It is important to be clear on what this does not say. It does not say that 50% of the IVs (and hence keys) will collide
+at about 212 packets. It says that if an adversary collects a packet trace of about 212 frames, there is about a 50%
+chance that the trace will contain at least one duplicate IV. But this is all the help an attacker needs.
+3.2 Some attacks
+So how does an attacker exploit the key reuse brought about by WEP’s IV duplication? There is no magic here. All
+of the attacks are standard. WEP does not protect against any of them.
+As with any stream cipher, an attacker can launch known plaintext and chosen ciphertext attacks. In today’s
+computing environments, these attacks are ridiculously easy. The attacker Eve, for instance, can forge e-mail from
+Bob, asking the victim Alice to e-mail a file with known content. A telephone call from Eve works just as well, if
+Alice knows Eve or Eve can pass herself off as Bob. If Eve does not know Alice, she can use an e-mail anonymizer
+to send spam to her. All of this appears completely innocent, but it causes known text to be encrypted. Eve captures
+the encrypted text with a packet sniffer and uses the relation
+ki = ci ⊕ pi
+to recover the key stream. She can save any key streams generated this way, each indexed by the appropriate IV, and
+immediately decrypt any WEP frame she sees later (or appears earlier in the packet trace!) with the same IV.
+Eve can work a little harder, with two sniffers, one on the radio link and one outside the firewall of the organization
+being attacked. Using a bit of traffic analysis, it is not difficult to correlate the unencrypted traffic recorded from
+outside the firewall with encrypted traffic captured from the over-the-air link. She repeats the same process above to
+recover more key streams.
+When 802.11 is used as the data link for a TCP/IP network, every data frame contains an IP datagram conveying
+large amounts of known plaintext. In such an environment Eve can recover a partial key stream for every frame sent.
+Traffic analysis can usually identify the type of traffic fairly accurately even when it is encrypted, and this
+information can be used to guess the values of variable fields in the packet headers, such as IP addresses and
+protocol numbers. This reveals even more of the data and hence key stream. The known plaintext from a single
+DHCP exchange can provide sufficient information to decode almost the entire TCP/IP header of every subsequent
+IP datagram encrypted by the DHCP client. Similarly, any “decrypted” packet can provide context and hints to help
+identify the plaintext of a still not fully decrypted packet, and this process can continue until the key streams are
+revealed for almost every IV.
+October 2000 doc.: IEEE 802.11-00/362
+Submission page 5 Jesse Walker, Intel Corporation
+As easy as these attacks are, they are largely for amateurs; there is no need to work this hard; at 24 bits, collisions
+come to you rapidly, one on the order of every second or two. A serious attacker will simply trace the 802.11 frames
+and XOR together ciphertext streams produced under the same IV. If an IV is used at least twice, then the packet
+trace will show the cipher streams
+ci = pi ⊕ ki, for i = 1, 2, 3, …
+ci′ = pi′ ⊕ ki, for i = 1, 2, 3, …
+produced from the key stream k1 k2 k3… associated with the IV. XORing these together yields
+pi′ ⊕ pi, for i = 1, 2, 3, …
+i.e., the attacker knows with certainty the XOR of corresponding plaintext bits from p1′ p2′ p3′… and p1 p2 p3… This
+means the attacker can know when each bit is the same or different in the two streams, so can immediately reduce
+the number of possibilities for each byte pair <b, b′> from the two streams from 216 possibilities to 28. Having a third
+or a fourth frame encrypted under the same IV can reduce the possibilities for the two plaintexts even more. These
+facts mean pattern recognition techniques can often split apart the intertwined plaintext streams.
+For instance, in any computing system a considerable percentage of actual data exchanged over a link is ordinary
+text from some natural language. In any natural language represented by an alphabet, certain character sequences
+occur more frequently than others, and the probabilities for various character sequences have been computed from
+empirical measurement. These facts mean that with a fairly high probability the adversary can easily and
+mechanically eliminate all but one of the 28 possibilities for almost all of the byte pairs <b, b′>. The WEP checksum
+can be used to referee among guesses for the few that cannot be eliminated by probabilities. In this way the attacker
+can recover the plaintext and the key stream without knowing any of the plaintext in advance. There is a good reason
+why the operating instructions for RC4 explicitly warn never to use the same key twice!
+As already noted, WEP as constituted today has no automated mechanism to change the BSS key, so people change
+it only infrequently, typically on the order of days or weeks or even months. After n hours of typical use, it is likely
+that the overwhelming number of IVs have been used at least n/2 times, so a packet trace of all the BSS traffic
+provides collisions among most of the IVs. In this way, an attacker can easily build up a dictionary of key streams
+for every IV. Since WEP frames are small, and since there are only 224 possible IVs, an attacker using even obsolete
+hardware can afford to store the key streams for all the IVs associated with thousands of base keys. Given that
+people tend to cycle through a small number manually configured base keys, an attacker usually only has to resort to
+these techniques only a few times before the BSS’s privacy is permanently compromised. It is simply not worth
+trying to provide any privacy if this is the best we can do.
+There is still one more problem with WEP’s use of the IV that is worth noting. As we have seen, it is feasible to
+recover the key streams associated with a large number of IVs in a short time. It is mechanical to use RC4’s
+definition along with the key stream and plaintext to reconstruct the underlying key schedule. Not every recovered
+key stream will reconstruct the entire key schedule, but we can expect to recover a certain amount of these. When
+we have recovered a full key schedule, it is worth asking ourselves: can we also recover the key used to compute it?
+We know the IV corresponding to the key schedule is the least significant 24 bits of the key, and we know the
+deterministic algorithm generating key schedule from the key. Can we compute the key using this knowledge?
+Questions like this worry cryptographers. WEP’s highly questionable method of concatenating the IV directly to the
+base key exposes the base key to direct attack. Because of this, it would also be advisable to find a new way to mix
+the IV with the base key.
+3.3 Discussion
+Attacks like these could be mounted against any protocol based on any stream cipher, but they are not, because they
+are ineffective in most environments. Why are they significant against WEP? why not against, e.g., SSL [7]? The
+reason is applications like SSL do not use RC4 the same way WEP uses it. SSL is designed to not reuse keys with
+any significant probability. In SSL, one random, e.g., 128-bit key is selected for an entire session. The key is not
+replaced on every packet. SSL can do this because it operates RC4 over a reliable data channel that does not lose
+data, so it can guarantee no synchronization loss between the encryptor and decryptor. When SSL replaces a key, it
+is not only the upper 24-bits that vary; it is the entire 128-bit key. This means the attacker has to collect samples
+from about 264 SSL ciphertext streams rather than the 212 needed to gain the same level of advantage in the case of
+WEP. That is, SSL’s usage of the same encryption algorithm costs an attacker 252, or about 4,000,000,000,000,000,
+times more than WEP’s.
+SSL is too different from WEP for this comparison to be very meaningful. It is therefore instructive to examine how
+IPsec [6] avoids key collisions, as the encapsulation problem it faces is similar to 802.11’s. IPsec uses four
+mechanisms:
+October 2000 doc.: IEEE 802.11-00/362
+Submission page 6 Jesse Walker, Intel Corporation
+1. It uses a unique key for each direction of each session over each (virtual) link. 3DES is the default cipher, and it
+has an effective key strength of 112 bits (the actual key size is 168 bits, but meet-in-the-middle attack against
+the 3DES construction diminishes the key strength). This means that there must be about 256/2 = 255 sessions
+before there is any significant chance of collision between two randomly generated keys. An attacker has to
+assemble a ridiculously large database of ciphertexts before he has any hope of a discovering a collision. And
+255 requires about 236 (64 billion) new sessions each second over twenty years, and the attacker somehow has to
+capture them all.
+2. When using 3DES, each session takes its IVs from a 64-bit space (the IV comes from a 128-bit space when
+AES is used). This means there is no significant chance of a randomly selected IV collision until after about 232
+packets. By using such a large IV space, IPsec can avoid an impossible to define IV avoidance algorithm,
+relying instead on probability to make collisions too unlikely to worry about. The attacker, on the other hand,
+needs 232 samples of ciphertext for each key in his database to make its existence worthwhile.
+3. IPsec allows a single key to encrypt at most 232 packets. The probabilities add up against an attack even if
+someone were able to somehow collect the necessary ciphertexts.
+4. IPsec uses CBC mode. CBC mode uses the IV as a salt, not as part of the key. A salt is public information to
+help de-correlate the information encrypted under the key, so patterns in the plaintext become invisible in the
+ciphertext. And the way CBC mode works (XOR of the IV with the plaintext before encryption) makes IV reuse
+less catastrophic than in the WEP case.
+Could the WEP encapsulation becomes safe if WEP migrates to per-link keys? Anyone who has followed the above
+analysis knows by now the answer is no, unless at a minimum WEP also defines an algorithm to make IV reuse a
+very rare event, and then also installs a new base key whenever the IV is in danger of repeating.
+And even this “unless” is provisional at best, because presupposes there are no other fatal attacks against the WEP
+encapsulation. For instance, if each link has both a key for sending and receiving, then a revised WEP might try to
+define a deterministic algorithm to compute the next IV. For example, the algorithm might be to use a counter to
+represent the IV, or it might specify to execute the next step of a linear congruential pseudo-random number
+generator, allowing an implementation to avoid reuse of an IV until cycling through the entire space. But there is no
+evidence that such a scheme works from a security perspective, that the correctness of the encryption does not
+somehow depend on the randomness of the IV. Indeed, when the cipher is RC4, this determinism allows an attacker
+to launch weak key attacks on the cipher; see Section 4.
+The problem is the existing WEP IV-based scheme is ad hoc, based purely on the notion that no attacks against it
+are evident to the designers, but, as we have seen, the scheme is fatally flawed in the light of its design goals. As a
+general rule, cryptographers distrust every ad hoc scheme until it is proven innocent, and that is the advice here:
+abandon the existing WEP scheme in favor of an algorithm known to provide privacy.
+How a cipher is used is every bit as important as the strength of the cipher and its key length. WEP uses RC4
+improperly, and because of this, fails to provide a meaningful notion of privacy. There are lots of ways to use a
+cipher securely, but WEP fails to make use of any of these proven techniques.
+Another question that has been asked is whether the WEP encapsulation could be strengthened by including a
+spoiler. A spoiler is a random string inserted at the beginning of the plaintext data to be encrypted, with the intent of
+acting much like an IV, to de-correlate the encrypted text that follows. The answer here is also no, because the key
+stream generated by RC4 provides no feedback mechanism based on any previous plain or ciphertext, so the spoiler
+does not alter the key stream. Spoilers only provide security when the cipher is used in a feedback mode, as in CBC
+and OFB.
+4 Problems with RC4
+Most of the analysis thus far applies to any stream cipher, although we have noted a few problems with RC4 that
+makes its use by WEP a dubious decision, the most important being it has no random access capability. RC4 also
+suffers from one more problem that makes its applicability to 802.11 even more questionable.
+One in every 256 RC4 key is “weak” [10], which means the key schedules for these keys are less correlated with the
+key than they ought to be. This makes it far easier to cryptanalyze data encrypted under these keys, in case we fix
+enough of the other WEP problems to justify its continued use in new submissions. If WEP were to continue to use
+RC4, there is a standard fix to this problem that should be incorporated into WEP’s definition. This is to run the RC4
+key stream generator at least 256 steps each time its key schedule is re-initialized, i.e., to begin encrypting with the
+257th byte of the key stream instead of the first. Given that WEP already has to reinitialize the RC4 key schedule
+with every frame, this additional overhead is probably too much cost to bear.
+October 2000 doc.: IEEE 802.11-00/362
+Submission page 7 Jesse Walker, Intel Corporation
+One final problem should be noted but is not a concern. The key stream RC4 produces exhibits an empirically
+measurable bias, meaning it only imperfectly hides correlation in the encrypted data. This problem is
+inconsequential as long as WEP uses only an infinitesimal part of the generated key stream (there is not sufficient
+data to correlate, since WEP recomputes the key schedule on every frame) and far easier attacks against WEP’s use
+of RC4 exist.
+5 Summary and recommendations
+This submission has identified significant deficiencies in the WEP data encapsulation that renders its data privacy
+claims meaningless, regardless of the key size. Increasing the WEP key from 40 to 104 or 128 bits does nothing to
+increase WEP’s resistance to attack. This is because the deficiencies are related to how WEP uses cryptography, not
+the key size. WEP’s design attempts to adapt RC4 to an environment for which it is poorly suited, with potentially
+catastrophic consequences for its intended users. Thus, to meet its goal of wired equivalent privacy, the WEP
+encapsulation needs significant reconstruction.
+This section recommends changes to WEP to address these problems. It recommends a cipher, a mode of operation
+for the cipher, a key derivation algorithm (at least for manual keys), and random data recommendations. It concludes
+by recommending a new WEP encapsulation.
+5.1 Cipher and mode of operation
+All new symmetric key encryption efforts starting now should be based on the AES [8] block cipher. It is thought to
+be as good as any symmetric key cipher in the public domain, and allows for very efficient implementations over a
+very wide range of environments (8-bit processors to super computers). This submission recommends against RC4
+for any future WEP encapsulation scheme; attempts to twist WEP around RC4 have led to enough problems already.
+The reformulated WEP should instead employ 128-bit AES as the mandatory to implement cipher.
+This submission also recommends that WEP use AES in Offset Codebook Mode (OCB, [11]). This is a stream
+cipher that also produces a message authentication code, preventing an adversary from forging messages. The data
+encrypted under OCB is the same length as the plaintext data, a single key is used for both encryption and
+authentication, and it requires only the AES encryption, not decryption, engine. It is also a parallelizable mode,
+allowing for very high throughput. OCB has been optimized to minimize the number of calls to lower level
+cryptographic primitives, and can both encrypt/decrypt and tag/verify a message in a single pass.
+The OCB state is the key, a stride, which provides the offset in the mode’s name, and an IV. The stride and the IV
+are of the cipher block size (128 bits for AES). The stride is computed once per session. The per-frame overhead of
+OCB is 128 bits for the IV, and 128 bits for the OCB authentication tag.
+5.2 Session key derivation
+This submission recommends a session key derivation algorithm in the case of a manually configured base key, as
+used by WEP today. It does not recommend an algorithm for session key derivation when dynamic keying is
+available, because the scheme should incorporate state from the dynamic keying operation, to tie the key to the
+particular session that negotiated the key.
+This algorithm produces two session keys, one for sending and the other for receiving.
+1. Concatenate the (a) BSSID, (b) the sender’s MAC address, and (c) the receiver’s MAC address to produce a
+string. The order is important, as the two MAC addresses are reversed for sending and receiving.
+2. Using the base key (manually configured key) and an IV of 128 zero bits, run the OCB-AES algorithm on the
+concatenated string. The session key is the authentication tag output by this:
+session-key ← OCB-AES-tagbase-key(0, BSSID | sender-mac-addr | receiver-mac-address)
+Here ‘a | b’ means the concatenation of strings a and b.
+The motives for this algorithm are (a) to remove the base-key from direct attack and (b) weakly tie the session key to
+the particular parties using it. Under this algorithm different sets of peers use different session keys, even though all
+the members of the BSS share the same base key. Note that the keys produced by this algorithm are still subject to
+dictionary attack when the base key is a password or derived from a password by techniques such as PCKS #5 [12].
+And all the keys are subject to spoofing if the base key is revealed to an adversary. There is no magic that can avoid
+these weaknesses.
+October 2000 doc.: IEEE 802.11-00/362
+Submission page 8 Jesse Walker, Intel Corporation
+5.3 Random data recommendations
+The security of the recommended scheme depends critically on a source of cryptographically secure random
+numbers. Implementations must appear to produce random numbers for their nonces, even across power cycles and
+reboots. [13] and [14] discuss cryptographic requirements for randomness and provide useful implementation
+guidance.
+5.4 Recommended encapsulation
+The new WEP encapsulation this submission proposes consists of
+1. A 128-bit IV. At session initiation the encrypter selects this randomly. On subsequent frames the encrypter may
+use the last 128-bits of encrypted data from the previous encrypted frame.
+2. A 32-bit sequence number. This will be the first quantity encrypted. It indicates the number of frames sent
+under the present key. When manual keys are used, the sequence number is not used and set to 0. When
+dynamic keys are used, it is initialized to zero when the key is established.
+3. The LLC data payload. This will also be encrypted.
+4. The 128-bit OCB data authentication tag.
+The encapsulation scheme thus adds 36 bytes to the frame size. This is the cost of privacy in a network these days.
+To WEP encapsulate a frame, the encrypter first checks that the counter has not yet assumed the maximum value. If
+it has, the data stream encrypted under the present key terminates until the key management system replaces the base
+key. If the counter has not yet assumed its maximum value, and if dynamic keys are used, the encrypter increments
+the counter by 1 and inserts the new counter value into the appropriate location in the frame. The encrypter then
+selects the nonce and OCB encrypts/tags the counter and data. It inserts the OCG authentication tag at the tail of the
+frame. The frame is now ready to transmit.
+To WEP decapsulate a received frame, the decryptor locates the correct context by the arriving MAC address. It
+uses the IV from the frame to OCB decypt the packet and verify its authenticity. If the session is dynamically keyed,
+it finally verifies that the counter is greater than any prior received value, i.e., the WEP receiver maintains a receive
+window size of 1. This prevents replay attack in the case when the session is dynamically keyed. Replay prevention
+is not feasible without dynamic keying
+6 References
+[1] IEEE Std 802.11-1997, Part 11: Wireless LAN Medium Access Control (MAC) and Physical Layer (PHY)
+specifications
+[2] B. Schneier, Applied Cryptography, 2nd Addition, Wiley, 1997.
+[3] A. J. Menezes, P. C. van Orschot, and S. A. Vanstone, Handbook of Applied Cryptography, CRC, 1996
+[4] S. M. Bellovin, “Problem Areas for IP Security Protocols”, 6th USENIX UNIX Security Conference
+[5] D. A. McGrew and S. R. Fluhrer, “The Stream Cipher Encapsulating Security Payload”, draft-mcgrew-
+ipsec-scesp-01.txt, IETF, July 2000
+[6] S. Kent and R. Atkinson, RFC 2401, Security Architecture for the Internet Protocol, IETF, November 1998
+[7] T. Dierks and C. Allen, RFC 2246, The TLS Protocol, Version 1.0, IETF, January 1999
+[8] J. Daemon and V. Rijmen, AES Proposal: Rijndael, available from http://csrc.nist.gov/encryption/aes/
+[9] P. Rogaway and D. Coppersmith, “A Software-Oriented Encryption Algorithm”, in Fast Software
+Encryption, Cambridge Security Workshop, Springer-Verlag, 1994
+[10] A. Roos, A Class of Weak Keys in the RC4 Stream Cipher, attachment to e-mail to cipherpunks@toad.com,
+September 22, 1995
+[11] P. Rogaway, OCB Mode: Parallelizable Authenticated Encryption, available from
+http://csrc.nist.gov/encryption/aes/
+[12] PKCS #5: Password-Based Encryption Standard, RSA Laboratories, November 1993.
+October 2000 doc.: IEEE 802.11-00/362
+Submission page 9 Jesse Walker, Intel Corporation
+[13] D. Eastlake, S. Crocker, and J. Schiller, RFC 1750, Randomness Recommendations For Security, IETF,
+December 1994
+[14] P. Gutman, Random Number Generation, available as
+http://www.cryptoengines.com/~peter/06_random.pdf

@@ -136,37 +136,81 @@ Exercise 04: Symmetric Encryption
     AES-CTR is not a block cipher. AES is a block cipher, and CTR is a mode of operation that turns it into a stream cipher.
 
 26. Read chapter 5 in the book.
+    ✅
 
 27. What is the RC4 algorithm, and why should you not use it?
+    RC4 is a stream cipher.
+    From the book:
+        The weakness in TLS is due only to RC4 and its inexcusable flaws: statistical biases, or nonrandomness, which we know is a total deal-breaker for a stream cipher.
 
 28. What is WEP and how/why was it broken (Read the paper “Unsafe at any key size; An analysis of the WEP encapsulation” (it’s on canvas)).
+    Wired Equivalent Privacy was the original security mechanism for Wi-Fi. It used RC4. 
+    The nonce was only 2^24 bit, so it repeated relatively quickly. Therefore, you could sniff packets for a while and easily decipher messages.
+    The implementation of RC4 was also flawed, and caused a statistical weakness. 
 
 29. What is Salsa20 and ChaCha20 (see the book and https://en.wikipedia.org/wiki/Salsa20)
+    Salsa20 and ChaCha20 are modern stream ciphers. They are currently considered secure.
+    They are popular becuase they are fast and simple while still being secure.
+    Software oriented cipher.
 
 30. How is ChaCha and BLAKE related? (see https://en.wikipedia.org/wiki/Salsa20)
+    From the book:
+        The stream cipher ChaCha is similar to Salsa20 but with a slightly different core permutation that was later used in the hash function BLAKE.
 
 31. The cryptography package supports the Blowfish algorithm. Should you use it? (why/why not)
+    Blowfish has a 64-bit block size, which makes it vulnerable to a birthday attack. 
+    From wikipedia:
+        In 2016, the SWEET32 attack demonstrated how to leverage birthday attacks to perform plaintext recovery (i.e. decrypting ciphertext) against ciphers with a 64-bit block size.
+        The GnuPG project recommends that Blowfish not be used to encrypt files larger than 4 GB due to its small block size.
 
 32. Counter-mode algorithms are quite popular – why is that? (explain)
+    Counter mode makes block ciphers act like stream ciphers. This has a couple advantage:
+        1. Decryption and encrytpion is the same operation (its simple, just xor the stream)
+        2. Since the only thing that changes is the counter and the counter is linear and predictable, you can parallelize it.
+            Very useful for modern multi threaded cpus.
+        3. No need for padding since its a stream and not a block.    
+        Because its independent, you can efficiently encrypt large chunks of data. 
+    However, make sure not to reuse the nonce
 
 33. In a stream cipher, there is no separate decryption function. How do you then do decryption?
+    You just recreate the keystream and xor 1 to 1 each bit. Its impossible to recreate the keystream without knowing the key.
 
-34. For a stream cipher SC(), the keystream is only dependent on the key (K) and the nonce/initialization
-vector (N).
+34. For a stream cipher SC(), the keystream is only dependent on the key (K) and the nonce/initialization vector (N).
     • What are the rules if you want to encrypt different messages (plaintexts)?
+        You need a different nonce. If you dont change the nonce you can learn information about the ciphertexts by XORing them.
     • Do you need to change the key during this process? (why/why not)
+        No, the nonce is there to change the input so that you dont have to change the key, as that would be impractical.
     • Does the key have to be secret?
+        Yes.
     • Does the nonce have to be secret?
+        No, its usually just sent as cleartext.
 
 35. The StreamCipher_Two_plaintexts_w_same_IV-KEY.py file illustrates a “known plaintext attack(KPA)” problem. Can this problem be prevented? Sure. DO NOT REUSE THE IV/NONCE!!!
+    Presuppose the nonce never changes. I have a known plaintext and the corresponding ciphertext. 
+    I can xor (known plaintext + its ciphertext) together which will give me the keystream, then i can xor keystream with the unknown ciphertext 2 which will give me the plaintext for message 2.
+    I have recovered message 2 without knowing the key (or nonce for that matter).
 
 36. KPA: Read the article on KPA on Wikipedia: https://en.wikipedia.org/wiki/Known-plaintext_attack
     • What techniques were used by the British to get access to KP?
+        From wikipedia:
+            1. The regimented style of military reports made it contain the word Wetter (German for "weather") at the same location in every message. 
+            2. Their operators, would send standard salutations or introductions. An officer stationed in the Qattara Depression consistently reported that he had nothing to report. "Heil Hitler," occurring at the end of a message, is another well-known example.
+            3. Bletchley Park would sometimes ask the Royal Air Force to "seed" a particular area in the North Sea with naval mines. The Enigma messages that were soon sent out would most likely contain the name of the area or the port threatened by the mines.
+            4. Whenever any of the turned German Double-Cross agents sent a message (written by the British) to their respective handlers, they frequently obligingly re-encrypted the message word for word on Enigma for onward transmission to Berlin.
 
 37. Sad: IDEA (https://en.wikipedia.org/wiki/International_Data_Encryption_Algorithm)
+    Never caught on becuase it was patented. And free alternatives like AES ate its lunch.
 
 38. Even more sad: Crypto AG1 (https://en.wikipedia.org/wiki/Crypto_AG) – What was the problem?
     1 Se også: https://www.digi.no/artikler/ledende-kryptoselskap-skal-i-hemmelighet-ha-vaert-eid-av-cia-og-bnd/485066
+        Produced encryption equipment used by governments around the world.
+        From wikipedia:
+            The company was secretly purchased in 1970 by the US Central Intelligence Agency (CIA) and West German Federal Intelligence Service (BND), and jointly owned until about 1993, with the CIA continuing as sole owner until about 2018.
+            The company has been criticised for selling backdoored products to benefit the US, UK, and German national signals intelligence services, the National Security Agency (NSA), the Government Communications Headquarters (GCHQ), and the BND, respectively.
+            Crypto AG sold equipment to more than 120 countries, including India, Pakistan, Iran, and multiple Latin American and African nations. Although neither the Soviet Union nor People's Republic of China were customers of Crypto AG, several of their friendly countries had the company's equipment. A few "allied" NATO members also used Crypto AG equipment, particularly southern European countries and Belgium.
+        Highlights how you need to be able to trust that implementations are also secure (the entire workflow pretty much). Doesnt matter how theoretically secure it is if there is a backdoor or something.
+        This is kind of similar to the rise of supply chain attacks in digital ecosystems (For example Node development. Very easy lose track of all the packages thats used in your code).
+
 
 
 --- (( SPECIAL EXERCISE )) ---
@@ -181,3 +225,5 @@ What we know:
     • The scheme is also key-less (an amazing feat!)
 There is a small prize to be won for the first one (ones, max 2 persons) to decrypt the secret message.
 Instructions for how to claim the prize are contained in the encrypted text.
+
+✅

@@ -24,7 +24,7 @@ Output only the cleaned text."""
 
 print("Sending off to openAI")
 
-response = client.responses.create(model="gpt-5.4", input= sysprompt +"\n" + text,)
+response = client.responses.create(model="gpt-5.4-mini", input= sysprompt +"\n" + text,)
 
 with open("book2txt/output.txt", "w", encoding="utf-8") as f:
     f.write(response.output_text)

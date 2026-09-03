@@ -1,0 +1,42 @@
+First create the secret sauce:
+    Start with the timestamp.
+    secret_sauce1 = bytes(datetime.today().isoformat(), "utf-8")
+    Turn the timestamp string into bytes.
+
+    Write the timestamp to the ciphertext file.
+    target.write(secret_sauce1 + b"\n")
+
+    Hash it with BLAKE3.
+    secret_sauce2 = blake3(secret_sauce1).digest()
+
+    Append name of our class, BTS4410 (\t is a tab space indicator).
+    secret_sauce2 += bytes("\tBTS4410", "utf-8")
+
+Next, create counter 42.
+    The counter will be incremented later.
+
+Next, we make the encryption function
+    Take in 16 byte blocks.
+    From this, create a HMAC hash with these parameters
+    hmac.new(
+        Key: Hash secret_sauce2 using sha3_256, KEEP ONLY first 16 bytes (its sliced),
+        Message: take counter, cast it to string, then convert to bytes,
+        Using algorithm: md5
+    )
+    increment counter by 1 for use next loop.
+    create 16 byte bytearray for ciphertext
+    ciphertext = message XOR key_stream
+    return ciphertext 
+
+Finally, read file and encrypt
+    Read file with plaintext
+        While there are bytes available:
+            Read next 16 bytes and place them in buffer.
+                If buffer is less than 16 bytes, pad it first (wont describe pad function but it just adds spaces).
+                ctxt (cleartext) = encrypt buffer with encryption function.
+                The fucuntion as we know returns bytes, so convert it to hex string first using hexstr (wont describe but turns bute to hex strings).
+                    Write this down the ciphertext file.
+                If buffer is 16 bytes long:
+                    ctxt (cleartext) = encrypt buffer with encryption function.
+                    Convert to hex string and write this down the ciphertext file.
+        No more lines (End-Of-File) = stop reading and close the file

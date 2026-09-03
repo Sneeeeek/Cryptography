@@ -49,34 +49,27 @@ def hexstr(c: bytes) -> str:
 
 
 
-finame = "Ultra_encrypted_message.txt"
-foname = "Ultra_decrypted_message.txt"
+finame = "Ultra_secret_message.txt"
+foname = "Ultra_encrypted_message.txt"
 target = open(foname, 'wb')
 
-# Timestamp copied from first line of the encrypted message
-secret_sauce1 = bytes("2026-05-26T15:59:03.674269", "utf-8")
 
+secret_sauce1 = bytes(datetime.today().isoformat(),"utf-8") 
 target.write(secret_sauce1+b"\n")
 secret_sauce2 = blake3(secret_sauce1).digest()
 secret_sauce2 += bytes("\tBTS4410","utf-8")
                
                
-with open("Ultra_encrypted_message.txt", "r") as source:
-    # skip first becuase its the timestamp. 
-    source.readline() 
-
+with open(finame, 'rb') as source:
     while True:
-        line = source.readline().strip()
-
-        if not line:
+        buffer = source.read(16)
+        if len(buffer)<16:
+            buffer = pad(buffer)
+            ctxt = EK(buffer)    
+            target.write(bytes(hexstr(ctxt),"utf-8"))
             break
-
-        ciphertext = bytes.fromhex(line)
-        plaintext = EK(ciphertext)
-
-        print(plaintext)
-
-        with open("output.txt", "a", encoding="utf-8") as f:
-            f.write(plaintext.decode("utf-8"))
-
+        else:
+            ctxt = EK(buffer)
+            target.write(bytes(hexstr(ctxt),"utf-8"))
+target.close()
 
