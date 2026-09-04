@@ -1,0 +1,169 @@
+Exercises 05: Mobile Security – 1G to 4G
+You should explain meticulously for all the “what is” questions.
+You may have to look beyond the lecture notes to answer all the questions.
+
+0. What was the name of the 1G system used in Norway?
+    Nordisk MobilTelefonsystem (NMT). Verdens første helautomatiske mobiltelefonisystem.
+
+1. What is “metering?
+    Metering the process of measuring and recording usage on a mobile network. 
+
+2. What is “GAFA” (or “GAMA”)?
+    Big tech acronym:
+        Google
+        Amazon
+        Facebook / Meta
+        Apple
+    Other famous example: FAANG
+
+3. What does the SIM acronym mean?
+    Subscriber Identity Module 
+
+4. What does “tamper resistant” mean in practice?
+    Tamper resistance means making it more difficult to tamper with (gain unauthorised access or modifications) the item in question. 
+    Tamper systems can also serve as a warning system to indicate something has been tampered with, like for example medical bottles having a tamper seal on them.
+    Chips can have hardware intended for tamper resistance. 
+
+5. What is “roaming”?
+    Roaming is when a mobile device connects to a network outside its native network. You will often encounter this when traveling abroad.
+    Norwegian networks obviously wont be accessible abroad, so you have to use a network from there, which will route your usage to your provider. 
+
+6. What does the MS acronym stand for?
+    Mobile Station. Mobile station refers to the group of all the components you need to communicate with a mobile network.
+    A modern mobile phone would be considered a "mobile station", as it features everything you need. 
+    Here im assuming you have a valid SIM installed. A phone does not neccesarily come with a SIM of course.
+
+7. What does the PLMN acronym stand for?
+    Public Land Mobile Network. PLMN refers to the mobile network owned and ran by an operator. This is the infrastructure your phone connects to.
+    From wikipedia:
+        A PLMN typically consists of several cellular technologies like GSM/2G, UMTS/3G, LTE/4G, NR/5G, offered by a single operator within a given country, often referred to as a cellular network.
+        A PLMN is identified by a globally unique PLMN code, which consists of a MCC (Mobile Country Code) and MNC (Mobile Network Code).
+        The IMSI, which usually identifies a SIM, USIM or eSIM for one subscriber, typically starts with the PLMN code. For example, an IMSI belonging to the PLMN 262-33 would look like 262330000000001.
+
+8. What is a “core network” and what does RAN stand for?
+    Radio Access Network - the towers and such whos job is to wirelessly connect your phone to the operators network (the core network). 
+    The core network is, as the name implies, the core system for the network provider. This is where they handle authentication, routing, usage, etc.
+
+9. What are the main assets as seen from the subscriber’s perspective? 
+    (there are more aspects than those outlined in the lecture…)
+        Some things subscribers typically care about:
+            Privacy and confidentiality
+            Fraud
+            Having service everywhere
+            Being sure the network is trustworthy
+            Message integrity
+            Device sovereignty 
+
+10. Why didn’t one derive session keys in NMT?
+    NMT was designed for an era that was very differnt from now. Phones were analog and we didnt have well established security standards (threat models).
+    Therefore, the NMT system did not really have much in ways of security. And since it was analog, it couldnt support encryption in this way. 
+
+11. Which generation does LTE belong to?
+    LTE was designed to be a transition generation between 3G and 4G. 
+    From wikipedia:
+        It is considered to be a "transitional" 4G technology, and is therefore also referred to as 3.95G as a step above 3G.
+
+12. What is an MTX?
+    Mobile Telephone Exchange. The central switching node that handled incoming calls and routed them where they needed to go and allat.
+
+13. What was ISDN?
+    Integrated Services Digital Network. 
+    From wikipedia:
+        A set of communication standards for simultaneous digital transmission of voice, video, data, and other network services over the digitalised circuits of the public switched telephone network.
+
+14. What was TCAP?
+    Transaction Capabilities Application Part. Lets network elements communicate and exchange transactions amongst each other. 
+    Its a messenger layer carrying messages between network systems
+
+15. What was SS7, and why is it still a security liability?
+    Signalling System No. 7.
+    From wikipedia:
+        A set of telephony signaling protocols developed in the 1970s that is used to setup and teardown telephone calls on most parts of the global public switched telephone network (PSTN). 
+            Teardown: A sequence of events used to disconnect a telephone call and return to the ready state for the next call setup. 
+    Why still security liability?
+        From wikipedia:
+            SS7 has been shown to have several security vulnerabilities, allowing location tracking of callers, interception of voice data, intercept two-factor authentication keys, and possibly the delivery of spyware to phones.
+                Known about for a long time:
+                    In 2008, several SS7 vulnerabilities were published that permitted the tracking of mobile phone users
+                    In 2014, the media reported a protocol vulnerability of SS7 by which anyone can track the movements of mobile phone users from virtually anywhere in the world with a success rate of approximately 70%.
+            Recent example: 
+                In 2026, the Iranian government exploited security vulnerabilities in SS7 to locate US military personnel during the 2026 Iran war.
+
+16. What is the IMSI?
+    International Mobile Subscriber Identity number. Used to uniquely identify every user of a mobile network. Kind of like an SSN but for phones.
+    The subscriber's permanent identity in the mobile network is such a number.
+    IMSI numbers should be kept secret. If you know the number of your target, you can track them using it. 
+
+17. What is a “triplet”?
+    Triplet of parameters. The network gives it to the authenticator.
+    Has 3 things:
+        RAND: Network challenge
+        SRES: The expected signed response
+        Kc: Cipher key.
+    The authenticator sends the challenge to the phone, the SIM computes the challenge. If the challenge is sucessful the SIM is authenticated.
+    If success, the Kc is used to encrypt the connection. 
+
+18. What is the A3/A8 algorithms used for?
+    
+
+19. What is MAP?
+
+20. What is a BTS?
+
+21. Between which two termination points does one have user data confidentiality in GSM?
+
+22. How big is a BLOCK in GSM (for the A5 cipher)?
+
+23. What is the “false-basestation” problem?
+
+24. What does the acronym IMT stand for? (and which body is responsible for it?)
+
+25. What does the acronym UMTS stand for?
+
+26. What is KASUMI?
+
+27. What does the acronym AV stand for?
+
+28. What are the elements of a UMTS AV?
+
+29. What is a USIM?
+
+30. When a USIM processes a challenge, why does it have to run the f5-function before the other f-functions?
+
+31. How long (in bits) is the RES in UMTS?
+
+32. How long are the CK and IK keys?
+
+33. What is an RNC?
+
+34. What is the f8-function used for?
+
+35. What is a “null cipher”?
+
+36. What does the acronyms LTE and EPS stand for?
+
+37. What is the “user plane” and the “control plane”?
+
+38. What is the basestation in 3G called?
+
+39. What is the basestation in 4G called?
+
+40. Why was the UICC/USIM for 3G retained in 4G?
+
+41. What is an MME?
+
+42. What is the ASME?
+
+43. What is the basis for deriving the KASME key?
+
+44. What is the “EPS AV” and which elements does it contain?
+
+45. What is a “security context”?
+
+46. Which algorithm is used for key derivation in 4G?
+
+47. Access security in 4G has omissions/weak parts, but what is the biggest security challenge for 4G?
+
+48. What is smishing?
+
+49. Provide some examples that the App Store or Google Play are unsafe.
