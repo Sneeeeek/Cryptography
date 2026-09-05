@@ -1,5 +1,6 @@
 from cryptography. hazmat. primitives. ciphers import Cipher, algorithms, modes
 
+# These functions are copied from the teacher materials mostly.
 def E(k,m: bytes) -> bytes:
     """AES-128 in ECB mode"""
     assert len(m) == 16, "E(k,m): Input block m must be 16 bytes long (was {:d}).".format(len(m))
@@ -53,7 +54,9 @@ def xor(a,b: bytes) -> bytes:
     return bytes(result)
 
 def rotate(rotNum: int, input: bytes) -> bytes:
-    # Divide by 8 since the rotate numbers are byte size. If they are not that you need to remove this.
+    """Rotate by x amount. Takes in rotation amount int + input bytes to rotate, returns the rotated bytes"""
+
+    # Divide by 8 since the rotate numbers are byte size. If you have rotates that are not divisible by 8, youll have to change this function.
     rotNum = rotNum//8 
     rotated = input[rotNum:]+input[0:rotNum]
     return bytes(rotated)
@@ -82,28 +85,39 @@ r5 = 96
 
 def milenage(K: bytes, RAND: bytes, SQN: bytes, AMF: bytes, OP: bytes) -> dict[str, bytes]:
     """The milenage encryption algorithm. 
-    Returns dictionary with f1, f1*, f2, f5, f3, f4, and f5*"""
+    Returns dictionary with OPc, f1, f1*, f2, f5, f3, f4, and f5*"""
 
     # OPc is calculated using OP and K(ey)
     OPc = xor(OP, E(K, OP))
 
-    # TEMP is calcualted using the RAND and the previous OPc
+    # TEMP is calcualted using the RAND and the OPc
     TEMP = E(K, xor(RAND,OPc))
 
     # IN1 is just some of the inputs concatenated. 
     IN1 = SQN+AMF+SQN+AMF
 
     # OUT1 is calcualted a bit differently from the others, as it also takes the IN1.
-    OUT1 = xor(OPc, E(K, xor(c1, xor(TEMP, rotate(r1,xor(IN1, OPc))))))
+    # OUT1: XOR IN1 with OPc -> Rotate that by R1 -> XOR that with TEMP -> XOR that with C1 -> Encrypt with AES-128 ECB -> Finally, XOR with OPc.
+    OUT1 = xor(OPc, E(K, xor(c1, xor(TEMP, rotate(r1, xor(IN1, OPc))))))
 
-    # These are bsically the same just using differnt constants and rotation amounts.
+    # I will dictate the OUT2: XOR TEMP with OPc -> Rotate that with R2 -> XOR that with C2 -> Encrypt with AES-128 ECB -> Finally, XOR with OPc.
+    # The others are the same just with different constants.
     OUT2 = xor(OPc, E(K, xor(c2, rotate(r2, xor(TEMP, OPc)))))
     OUT3 = xor(OPc, E(K, xor(c3, rotate(r3, xor(TEMP, OPc)))))
     OUT4 = xor(OPc, E(K, xor(c4, rotate(r4, xor(TEMP, OPc)))))
     OUT5 = xor(OPc, E(K, xor(c5, rotate(r5, xor(TEMP, OPc)))))
 
-    # Return a dict with the bytes.
+    # Returns a dict with these bytes:
+        # OPc =  the calculated value of OPc
+        # f1  =  the first 8 bytes of OUT1
+        # f1* =  the final 8 bytes of OUT1
+        # f2  =  the final 8 bytes of OUT2
+        # f5  =  the first 6 bytes of OUT2
+        # f3  =  the entire OUT3
+        # f4  =  the entire OUT4
+        # f5* =  the first 6 bytes of OUT5 
     return {
+            "OPc": OPc,
             "f1":  OUT1[:8],
             "f1*": OUT1[8:],
             "f2":  OUT2[8:],

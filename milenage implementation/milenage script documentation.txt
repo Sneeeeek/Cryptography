@@ -1,0 +1,24 @@
+The milenage script has 6 functions:
+    E: Takes in Key (bytes), Message (bytes) and encrypts it using AES-128 in ECB mode -> Returns bytes
+
+    a2b (ASCII to Bytes): Takes in ASCII string and turns it into bytes -> Returns bytes
+
+    b2a (Bytes to ASCII): Takes in bytes or byteArray and turns it into ASCII -> Returns string
+
+    xor: Takes in two byte objects and XORs them -> Returns bytes
+
+    rotate: Takes in rotNum (rotation number) and the input (bytes) to rotate, and rotates them by the rotNum. -> Returns bytes
+        For this implementation, the rotnum needs to be divisible by 8, but this is not a concern becuase milenage only uses 8-divisible rot numbers.
+
+    milenage: The actual milenage algorithm. Takes in K, RAND, SQN, AMF, and OP (all bytes) -> Returns a dictionary with OPc, f1, f1*, f2, f5, f3, f4, and f5*.
+        The dict format is dict[str, bytes] -> so result["f1"] will give you the f1 value in bytes
+        OUT1: XOR IN1 with OPc -> Rotate that by R1 -> XOR that with TEMP -> XOR that with C1 -> Encrypt with AES-128 ECB -> Finally, XOR with OPc.
+        OUT2: XOR TEMP with OPc -> Rotate that with R2 -> XOR that with C2 -> Encrypt with AES-128 ECB -> Finally, XOR with OPc.
+            OUT2 to 5 are all calculated the same just with different constants and rotations, so i just described OUT2.
+
+The milenage function is intended to be exported. Therefore, you will also find testMilenage.py. 
+    testMilenage has 3 sections. First, variable inputs for the data, both the vars and the expected outputs.
+        If you dont have expected outputs, you can just comment them out, as the verification checks have "if 'test_f1' in globals()" to check first (so you can easily "enable/disable" the "feature").
+    It takes the inputs K, RAND, SQN, AMF, OP -> runs the milenage function on them -> and assigns that to a variable result. Result is a dict.
+    Finally, it prints the elements of the dict.
+        If test_f1 exists, it will also run the verification check.

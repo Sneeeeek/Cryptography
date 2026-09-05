@@ -104,29 +104,71 @@ You may have to look beyond the lecture notes to answer all the questions.
     If success, the Kc is used to encrypt the connection. 
 
 18. What is the A3/A8 algorithms used for?
-    
+    From wikipedia:
+        The COMP128 algorithms are implementations of the A3 and A8 functions defined in the GSM standard. 
+        A3 is used to authenticate the mobile station to the network. 
+        A8 is used to generate the session key used by A5 to encrypt the data transmitted between the mobile station and the BTS.
 
 19. What is MAP?
+    Mobile Application Part is an SS7 protocol. It is a protocol specification.
+    From wikipedia:
+        Provides an application layer for the various nodes in GSM and UMTS mobile core networks and GPRS core networks to communicate with each other in order to provide services to users. 
+    MAP is not an actual *thing*, its not hardware or anything. Its a description of how things should work for like standardisation or whatever.
 
 20. What is a BTS?
+    Base Transceiver Station.
+    From wikipedia:
+        A piece of equipment that facilitates wireless communication between user equipment and a network. 
+            UE examples: Mobile phones, computers with wireless Internet connectivity, or antennas mounted on buildings.
+    In a BTW tower for example: 
+        The BTS is the radio network equipment doing the actual transceiver work.
 
 21. Between which two termination points does one have user data confidentiality in GSM?
+    Between the MS (Mobile Station, so like your phone) and the BTS (Base Transceiver Station).
+    This is not very much, its only the wireless part between your phone and the reciever.
 
 22. How big is a BLOCK in GSM (for the A5 cipher)?
+    The BLOCK is 114-bits.
 
 23. What is the “false-basestation” problem?
+    The network authenticates the subscriber, but the subscriber dod not really authenticate the network. 
+    There was little to prevent someone from setting up a fake base station, hoping to lure devices to connect.
+    While "modern" (3G and up) helped mitigate this issue with mutual authentication systems, such an attack is still a concern.
+        From wikipedia:  
+            The 3G wireless standard offers some risk mitigation due to mutual authentication required from both the handset and the network.
+            However, sophisticated attacks may be able to downgrade 3G and LTE to non-LTE network services which do not require mutual authentication.
+    Even though 2G and older are the source of much issues here, dropping backwards compatibility with 2G is not neccesarily viable.
 
 24. What does the acronym IMT stand for? (and which body is responsible for it?)
+    International Mobile Telecommunications. Requirements issued by the ITU Radiocommunication Sector.
+        Who are ITU-R? From wikipedia:
+            The ITU Radiocommunication Sector (ITU-R) is one of the three sectors of the International Telecommunication Union (ITU) and is responsible for radio communications.
+        Requirements issued by the ITU-R of the ITU in 2008 for what is marketed as 4G mobile phone and Internet access service.
+    A gatekeeping definition for the 4G label. So when a provder says 4G, they actually mean a system that fits the IMT requirements for that generation.
 
 25. What does the acronym UMTS stand for?
+    Universal Mobile Telecommunications System. UMTS is the 3G standard developed by 3GPP. 
+    UMTS is the 3G successor to GSM.  
 
 26. What is KASUMI?
+    From wikipedia:
+        KASUMI is a block cipher used in UMTS, GSM, and GPRS mobile communications systems. 
+            In UMTS, KASUMI is used in the confidentiality (f8) and integrity algorithms (f9) with names UEA1 and UIA1, respectively.
+            In GSM, KASUMI is used in the A5/3 and A5/4 key stream generator and in GPRS in the GEA3 and GEA4 key stream generator.
 
 27. What does the acronym AV stand for?
+    Authentication Vector. A set of values used by the network and subscriber to authenticate each other.
 
 28. What are the elements of a UMTS AV?
+    RAND: the random challenge
+    XRES: the expected response
+    CK: cipher key
+    IK: integrity key
+    AUTN: authentication token for the network
+        The network uses these elements to construct a challenge for the SIM to solve. If the SIM solves the challenge, we can authenticate them. 
 
 29. What is a USIM?
+    Universal Subscriber Identity Module
 
 30. When a USIM processes a challenge, why does it have to run the f5-function before the other f-functions?
 
