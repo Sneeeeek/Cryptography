@@ -168,21 +168,47 @@ You may have to look beyond the lecture notes to answer all the questions.
         The network uses these elements to construct a challenge for the SIM to solve. If the SIM solves the challenge, we can authenticate them. 
 
 29. What is a USIM?
-    Universal Subscriber Identity Module
+    Universal Subscriber Identity Module. 
+    When they introduced UMTS (3G), they split what the name "SIM" meant into two parts.
+        UICC = the physical card.
+        USIM = the software on that card for 3G and later networks.
+    From wikipedia:
+        This split was necessary because UMTS introduced a new application, the universal subscriber identity module (USIM). 
+        The USIM brought, among other things, security improvements like mutual authentication and longer encryption keys, and an improved address book.
 
 30. When a USIM processes a challenge, why does it have to run the f5-function before the other f-functions?
 
 31. How long (in bits) is the RES in UMTS?
+    From 3GPP document:
+        The authentication response (RES) shall have a variable length of 4‑16 octets.
+    An octet is a byte, so 4*8 to 16*8 bits -> therefore, 32 to 128 bits. 
+    Standard size seems to be 64 bits. 
 
 32. How long are the CK and IK keys?
+    From 3GPP document:
+        CK:
+            The cipher key (CK) shall have a length of 128 bits.
+        IK:
+            The integrity key (IK) shall have a length of 128 bits.
 
 33. What is an RNC?
+    Radio Network Controller. The RNC is the part that controls the Node Bs (Node B = basically a radio tower). 
+    It coordinates the tower and its resources.
+    It controls multiple towers.
 
 34. What is the f8-function used for?
+??
+    f8 is used to generate the ciphering key for UMTS.
+    It turns the secret key and random challenge into a key called CK. That CK is then used to encrypt the radio connection traffic.
 
 35. What is a “null cipher”?
+   Ciphering mode where no encryption is used. 
+   From wikipedia: 
+    In modern cryptography, null encryption (or selecting null cipher or NONE cipher) is choosing not to use encryption in a system where various encryption options are offered.
 
 36. What does the acronyms LTE and EPS stand for?
+    LTE: Long Term Evolution
+    EPS: Evolved Packet System
 
 37. What is the “user plane” and the “control plane”?
 
