@@ -291,5 +291,10 @@ You may have to look beyond the lecture notes to answer all the questions.
     Many apps out there that arent straight malware but act maliciously.
         Examples of non malware unsafe:
             Apps that trick you into signing up for subscription services
-            Android apps disguised as cleaners, scanners, or QR tools are common. These are like adware type deal usually.
+            Android apps disguised as cleaners, scanners, or QR tools are common. These are usually an adware type deal.
             Apps that collect a fuckton of data. Another classic. These app may even do what they say they will do (like a flashlight for example), but they request premissions for everything and collect all the data and send it home.
+    Most mobile games are arguably malware these days considering how hard they try to make you press to purchase some shit, or they show you sketchy ads. 
+        My bejweled app (from the company that made bejweled so its "official") has both so i stopped playing. 
+        Especially with the ads. Despite these ads being clearly sus, these companies just accept them being in the game presumably becuase they pay well?
+            Why do they pay well? Becuase they have a high success rate = they manage to trick people into spending money often.
+                Therefore: These companies allow this scam industry to florish by letting these ads into their game.
