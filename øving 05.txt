@@ -177,6 +177,12 @@ You may have to look beyond the lecture notes to answer all the questions.
         The USIM brought, among other things, security improvements like mutual authentication and longer encryption keys, and an improved address book.
 
 30. When a USIM processes a challenge, why does it have to run the f5-function before the other f-functions?
+    The other f functions do not rely on f5 to continue. 
+    The USIM runs f5 to generate the anonymity key AK.
+        AK is used to decrypt the concealed sequence number in AUTN. The sequence number lets you check if the challenge is fresh.
+        Checking for fresheness is to prevent replay attacks.
+    Therefore, f5 is needed first because SQN must be recovered from AUTN as part of the authentication procedure. 
+    If it fails, theres no point continuing since we cant trust the other party.
 
 31. How long (in bits) is the RES in UMTS?
     From 3GPP document:
@@ -197,9 +203,10 @@ You may have to look beyond the lecture notes to answer all the questions.
     It controls multiple towers.
 
 34. What is the f8-function used for?
-??
-    f8 is used to generate the ciphering key for UMTS.
-    It turns the secret key and random challenge into a key called CK. That CK is then used to encrypt the radio connection traffic.
+    The f8 function is the confidentiality/encryption function. 
+    It is a stream cipher. 
+    How does this connect to the f1-f5 milenage functions?
+        Milenage f3 creates CK -> f8 uses this IK to encrypt the connection.
 
 35. What is a “null cipher”?
    Ciphering mode where no encryption is used. 
@@ -211,27 +218,78 @@ You may have to look beyond the lecture notes to answer all the questions.
     EPS: Evolved Packet System
 
 37. What is the “user plane” and the “control plane”?
+    The user plane carries the user data like calls, messages, internet traffic.
+    The control plane handles signaling and network management like setting up connections, authentication, routing decisions, and handovers.
 
 38. What is the basestation in 3G called?
+    Node B.
 
 39. What is the basestation in 4G called?
+    eNode B -> Evolved Node B.
 
 40. Why was the UICC/USIM for 3G retained in 4G?
+    Backwards compatibility and they use the same subscriber identity model.
+        NOTE: subscriber identity MODEL, not MODULE. Module refers to the litte card, Model refers to the broader system and how it works.
+    Its just easier to keep it. Dont need to make people and manufacturers change, backwards compatible, and the security scheme is still considered safe so no reason to change that.  
 
 41. What is an MME?
+    Mobility Management Entity. Data plane entity. Manages the signaling that makes the connections possible and keeps it stable. 
 
 42. What is the ASME?
+    Access Security Management Entity. Related to the MME.
+        Part of the MME that deals with security functions.
 
 43. What is the basis for deriving the KASME key?
+    In 4G/LTE networks, the KASME key is derived from the Ciphering Key (CK) and Integrity Key (IK) combined with the Public Land Mobile Network (PLMN) ID using a Key Derivation Function (KDF) based on HMAC-SHA-256.
 
 44. What is the “EPS AV” and which elements does it contain?
+    Evolved Packet System Authentication Vector. 
+    It is the authentication package used in LTE to let the network and the USIM perform AKA (Authentication and Key Agreement -> authentication protocol LTE uses) and derive security keys.
+        Package here means bundle of authentication data sent together as one set.
+        Some are sent, some are derived, some are kept for later key derivation.
+
+    It contains 5 elements:
+        RAND: random challenge
+        AUTN: network authentication token
+        XRES: expected response
+        CK and IK: intermediate AKA keys used to derive KASME
+        KASME: the key used to derive LTE access security keys
 
 45. What is a “security context”?
+    A security context is the collection of encryption keys and authentication data stored by both the device and the network to establish and maintain a protected communication session.
+    Kind of like a session. Both parties do a handshake and check that both are verified and allat. And now they are like ok we can start communicating and doing our stuff now safely.
 
 46. Which algorithm is used for key derivation in 4G?
+    LTE uses a key derivation function based on HMAC-SHA-256.
 
 47. Access security in 4G has omissions/weak parts, but what is the biggest security challenge for 4G?
+    I would say the backwards compatibility with old (and less safe) systems. As i mentioned before, (from wikipedia)
+        However, sophisticated attacks may be able to downgrade 3G and LTE to non-LTE network services which do not require mutual authentication.
+    Chain is only as strong as the weakest link and all that.
+    
+    I think its probably also quite difficult to protect the network and all that stuff while also maintaining a global system. 
+        I can imagine its difficult to deal with a trust model across operators in basically every country and all the radio access points out there.
+            Fake base stations and other signaling attacks, all that shit.
+        And what if you accidentally trust a network operator thats not actually legit, or a network operator that gets hacked since it has shit security.
 
 48. What is smishing?
+    From wikipedia:
+        SMS phishing or smishing is a phishing attack using mobile text messages to deliver bait messages.
+        The victim is usually asked to click a link, call a phone number, or contact an email address provided by the attacker. They may be asked to provide private information, such as login credentials.
+    Difficult to deal with becuase SMS messages are private and you cant exactly scan peoples messages (HAH. Chat control! Now you can, go fuck yourself if you care about privacy).
+    SMS is often also considered a reasonably trustworthy channel, despite SMSes being public and anyone can send you an SMS. Therefore, its easier to trick people with this method.
 
 49. Provide some examples that the App Store or Google Play are unsafe.
+    Why unsafe? Malicious or disguised apps can sometimes pass review and still reach users.
+    Modern telephony security has improved significantly, to the point where the users phone is usually the weakest point in the chain. 
+    Why it matters? Users will trust that app stores are safe since they are managed by apple/google/etc. 
+    Example of malware:
+        XcodeGhost: Supply chain attack. 
+            Attackers distributed a modified/counterfeit version of Apple's Xcode development environment. Developers unknowingly used the infected Xcode to build their iOS applications.
+            Inserted a hidden backdoor into many apps. 
+    Should be noted that they are relatively good at stopping actual malware these days. Many of the malware apps we hear about are security disclosures from like google or whatever.
+    Many apps out there that arent straight malware but act maliciously.
+        Examples of non malware unsafe:
+            Apps that trick you into signing up for subscription services
+            Android apps disguised as cleaners, scanners, or QR tools are common. These are like adware type deal usually.
+            Apps that collect a fuckton of data. Another classic. These app may even do what they say they will do (like a flashlight for example), but they request premissions for everything and collect all the data and send it home.
