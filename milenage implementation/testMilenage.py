@@ -40,7 +40,8 @@ print("\n","-"*75,"\n")
 
 # Verification checks for if the output matches the test set.
 # Tabs are there for pretty print.
-# if test_f1 in globals() is a check to see if the test_f1 variable exists or not. Its here so you can easily "enable/disable" this section by just commenting the test variables at the top. 
+# If test_f1 in globals() is a check to see if the test_f1 variable exists or not.
+# Its here so you can easily "enable/disable" this section by just commenting the test variables at the top. 
 if 'test_f1' in globals():
     if result["f1"] == test_f1:
         print("F1       Correct -      ", result["f1"])
