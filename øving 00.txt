@@ -91,7 +91,16 @@ a. Can you think of a way around this severe problem?
  
 22.  Where did Kerckhoff work? 
     Auguste Kerckhoffs was a dutch linguist and cryptographer who worked in france. Among other things, he worked on The Journal of Military Science (Le Journal des Sciences Militaires)
- 
+    From wikipedia:
+        These articles surveyed the then state-of-the-art in military cryptography, and made a plea for considerable improvements in French practice. 
+        They also included many pieces of practical advice and rules of thumb, including six principles of practical cipher design:
+            The system should be, if not theoretically unbreakable, unbreakable in practice.
+            The design of a system should not require secrecy, and compromise of the system should not inconvenience the correspondents (Kerckhoffs's principle).
+            The key should be memorable without notes and should be easily changeable.
+            The cryptograms should be transmittable by telegraph.
+            The apparatus or documents should be portable and operable by a single person.
+            The system should be easy, neither requiring knowledge of a long list of rules nor involving mental strain.
+
 23.  What does his principle mean in practice? 
     A cipher is only secure if its still safe despite how it works being public. As long as the key is secret, everything else can be public without issue. 
 
@@ -148,7 +157,7 @@ a. Can you think of a way around this severe problem?
 
 32.  Attack models: CCA 
     a. What is a CCA and what is it capable of? 
-        Chosen- ciphertext attackers (CCAs). They can perform both encrypt and decrypt queries. They can submit plaintext/ciphertext of their choosing and observe the corresponding outputs.
+        Chosen-ciphertext attackers (CCAs). They can perform both encrypt and decrypt queries. They can submit plaintext/ciphertext of their choosing and observe the corresponding outputs.
 
     b. Do you think all crypto-system need to be able to withstand a CCA? (why/why not)
         No. This would depend on what constitutes as a crypto system. 
@@ -162,14 +171,16 @@ a. Can you think of a way around this severe problem?
 
  
 33.  Is it computationally infeasible to attack AES-128? (why/why not)
-    It is computationally infeasible to crack AES-128 becuase it is too computationally expensive (takes too long and energy to do). The keyspace is too large.
+    It is computationally infeasible to crack AES-128 becuase it is too computationally expensive (takes too long and energy to do). 
+    The keyspace is too large.
  
 34.  What is a Gray-Box Attack model? (explain) 
-    In a gray box attack, an attacker has some knowledge or access to the implementation of the cipher. In real life this would mean for example they can access the computer that is doing the encryption. 
+    In a gray box attack, an attacker has some knowledge or access to the internal state etc. 
+    In real life this would mean for example they can access the computer that is doing the encryption. 
  
 35.  What is the difference between an invasive attack and a non-invasive attack? (give examples) 
     A non invasive attack does not alter or affect the underlying processes in any way. This would for example be measuring RAM or voltages.
-    An invasive attack alters the pr    ocesses in some way, like manipulating the RAM and flipping bits manually.
+    An invasive attack alters the processes in some way, like manipulating the RAM and flipping bits manually.
  
 36.  What does indistinguishable mean in the context of security goals? 
     The resulting encrypted data should be indistinguishable from random data.
