@@ -158,6 +158,7 @@ Exercise 04: Symmetric Encryption
         The stream cipher ChaCha is similar to Salsa20 but with a slightly different core permutation that was later used in the hash function BLAKE.
 
 31. The cryptography package supports the Blowfish algorithm. Should you use it? (why/why not)
+    No. You should not use it.
     Blowfish has a 64-bit block size, which makes it vulnerable to a birthday attack. 
     From wikipedia:
         In 2016, the SWEET32 attack demonstrated how to leverage birthday attacks to perform plaintext recovery (i.e. decrypting ciphertext) against ciphers with a 64-bit block size.
@@ -194,7 +195,7 @@ Exercise 04: Symmetric Encryption
     • What techniques were used by the British to get access to KP?
         From wikipedia:
             1. The regimented style of military reports made it contain the word Wetter (German for "weather") at the same location in every message. 
-            2. Their operators, would send standard salutations or introductions. An officer stationed in the Qattara Depression consistently reported that he had nothing to report. "Heil Hitler," occurring at the end of a message, is another well-known example.
+            2. Their operators would send standard salutations or introductions. An officer stationed in the Qattara Depression consistently reported that he had nothing to report. "Heil Hitler," occurring at the end of a message, is another well-known example.
             3. Bletchley Park would sometimes ask the Royal Air Force to "seed" a particular area in the North Sea with naval mines. The Enigma messages that were soon sent out would most likely contain the name of the area or the port threatened by the mines.
             4. Whenever any of the turned German Double-Cross agents sent a message (written by the British) to their respective handlers, they frequently obligingly re-encrypted the message word for word on Enigma for onward transmission to Berlin.
 

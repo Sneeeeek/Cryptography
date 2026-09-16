@@ -23,6 +23,7 @@ You may have to look beyond the lecture notes to answer all the questions.
     Tamper resistance means making it more difficult to tamper with (gain unauthorised access or modifications) the item in question. 
     Tamper systems can also serve as a warning system to indicate something has been tampered with, like for example medical bottles having a tamper seal on them.
     Chips can have hardware intended for tamper resistance. 
+    It should cost signficiant time or resources to tamper with the device.
 
 5. What is “roaming”?
     Roaming is when a mobile device connects to a network outside its native network. You will often encounter this when traveling abroad.
@@ -55,8 +56,10 @@ You may have to look beyond the lecture notes to answer all the questions.
             Device sovereignty 
 
 10. Why didn’t one derive session keys in NMT?
-    NMT was designed for an era that was very differnt from now. Phones were analog and we didnt have well established security standards (threat models).
-    Therefore, the NMT system did not really have much in ways of security. And since it was analog, it couldnt support encryption in this way. 
+    Since it was analog, it couldnt support encryption in this way. 
+    The NMT system did not really have much in ways of security.
+    NMT was designed for an era that was very differnt from now. 
+    Phones were analog and we didnt have well established security standards (threat models).
 
 11. Which generation does LTE belong to?
     LTE was designed to be a transition generation between 3G and 4G. 
