@@ -21,7 +21,7 @@ CMD_CONCEAL = "CONCEAL"
 CMD_DECONCEAL = "DECONCEAL"
 
 
-SUCI_FILE_NAME = "SUCI_data.bin"
+SUCI_FILE_NAME = "SUCI/SUCI_data.bin"
 
 
 KDF_APP_INFO = bytes("BTS4410 -- Oppgave 2","utf-8")
@@ -104,7 +104,7 @@ def store_private_key(private_key,filename,pw):
 def load_public_key(filename):
     """This function reads a PEM file containing the public key.
     The pem data is then de-seralized, and returned."""
-    pem_pubf = open(filename,"rb")
+    pem_pubf = open("SUCI/" + filename,"rb")
     pem_pubkey_data = pem_pubf.read()
     pem_pubf.close()
     return(serialization.load_pem_public_key(pem_pubkey_data))
@@ -113,7 +113,7 @@ def load_public_key(filename):
 def load_private_key(filename, pw):
     """This function reads a PEM file containing the private key.
     The pem data is then de-seralized, and returned."""
-    pem_privf = open(filename,"rb")
+    pem_privf = open("SUCI/" + filename,"rb")
     pem_privkey_data = pem_privf.read()
     pem_privf.close()
     return(serialization.load_pem_private_key(pem_privkey_data,pw))

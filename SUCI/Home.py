@@ -37,6 +37,7 @@ if cmd==CMD_DECONCEAL:
     f = open(SUCI_FILE_NAME,"rb")
     raw_suci_data = f.read()
     f.close()
+    print(raw_suci_data)
     print("    Loaded: "+SUCI_FILE_NAME+", Length:",len(raw_suci_data))
     
     #*******************************************************

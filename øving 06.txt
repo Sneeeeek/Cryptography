@@ -1,0 +1,58 @@
+Exercises 06: AEAD
+0. What are the options for combining data confidentiality and data integrity?
+    Encrypt-and-MAC  -> Encrypt-and-Authenticate 
+    Encrypt-then-MAC -> Encrypt-then-Authenticate 
+    MAC-then-Encrypt -> Authenticate-then-Encrypt 
+
+1. What is Encrypt-and-Authenticate?
+        Encrypt your plaintext and MAC your plaintext -> Send both to the recipient. Recipient decrypts the plaintext, MACs it, and then compares them. 
+    • Are there any advantages or drawbacks to authenticate (MAC) the plaintext?
+        They can be parallelized.
+        From the book:
+            Encrypt- and-MAC is the least secure MAC and cipher composition because even a secure MAC could leak information on P, making P easier to recover. 
+            This can be fixed relatively easily tho.
+
+2. What is Encrypt-then-Authenticate?
+        Encrypt the plaintext -> MAC the ciphertext -> send both to recipient. Recipient MACs the ciphertext to confirm if its correct.
+    • Are there any advantages or drawbacks to authenticate (MAC) the ciphertext?
+        Since you check first before doing decryption, you dont have to worry about spending effort decrypting a corrupted message.
+        Since the MAC requires a key, an attacker cant fake a message easily, which makes it harder to transmit malicious data.
+
+3. What is Authenticate-then-Encrypt?
+        MAC the plaintext -> encrypt plaintext || MAC -> recipient decrypts and splits the data into plaintext || MAC to check.
+    • Are there any advantages or drawbacks to encrypting the tag?
+        You need to decrypt before you can check if its corrupted or not, so you can waste processing effort.
+        From the book:
+            it hides the plaintext’s authentication tag, thus preventing the tag from leaking information on the plaintext.
+
+4. What is the AD in AEAD?
+    AE -> Authenticated Encryption
+    AD -> Associated Data
+
+5. What kind of protection (if any) is there for the AD?
+    Integrity Protection
+    From the book:
+        An AEAD algorithm allows you to attach cleartext data to a ciphertext in such a way that if the cleartext data is corrupted, 
+        the authentication tag won’t validate, and the ciphertext won’t decrypt. 
+
+6. AEAD: What happens if the tag is invalid?
+     If the tag is invalid, the plaintext is discarded. 
+
+7. Are AEAD used in any important cases?
+    
+
+8. Can you mention any NIST defined AEAD cipher modes?
+
+9. Is AEAD supported by the python cryptography module (OpenSSL)?
+
+10. What is GHASH?
+
+11. Could you use GHASH instead of SHA-256? (would it be wise?)
+
+12. Which NIST AEAD algorithm do you think is most important (why?)?
+
+13. How long is the IV/Nonce in AES-GCM?
+
+14. What is the authoritative reference for AES-GCM-SIV?
+
+15. Can you imagine why the IV in AES-GCM-SIV is 12 bytes (= 96 bits)?
