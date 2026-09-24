@@ -1,0 +1,72 @@
+Exercises 07: Asymmetric Encryption
+
+0. What defines the “Polynomial”, “Exponential” and “Superpolynomial” hardness categories?
+
+1. Is NP equivalent to EXP (exponential) complexity?
+
+2. How hard is the “factoring problem” (used in RSA)?
+
+3. Is the DLP problem “hard”?
+
+4. Check out more about the DH inventors?
+    • Who where they (and why is Merkle also involved)
+    • Who was first with asymmetric methods?
+
+5. Who were the RSA inventors?
+    • Who was the mathematician amongst them?
+    • What else is Shamir known for?
+
+6. What is the difference between a “one-way function” and a “one-way trapdoor function”?
+
+7. What is ECDH and how is it different from “standard” DH?
+
+8. How large should the RSA keys be to be future-safe?
+
+9. Who was Robert D. Carmichael anyway?
+
+10. Try to improve the RSA python scripts (they are clumsy and inelegant)
+
+11. What is achieved if Alice encrypts a message m with Bob public key (and sends m to Bob)?
+
+12. What is achieved if Alice encrypts a message m with her own private key (and sends m to Bob)?
+
+13. What is achieved by a DH exchange?
+
+14. What is not achieved by a basic DH exchange?
+
+15. What is MitM?
+    • Explain the problem?
+    • How can the MitM problem be solved?
+
+16. Does it matter to Alice if Eve sees the DH exchange data? (why / why not)
+
+17. What is PFS and why does it matter?
+
+18. What does “ephemeral” mean?
+
+19. Run the PYCA_RSA_example_x.py programs. Are the results as expected?
+
+20. Run the PYCA_RSA_exercise_0_Bob_key-pair.py program.
+    • What does the program do?
+    • What is a PEM file?
+    • Open the PEM file in a text editor (pure text). What do you see?
+
+21. Run the PYCA_RSA_exercise_1_Alice_encrypts_a_msg.py program.    
+    • What does the program do? 
+    • When seeing “Enter the plaintext:”, then enter a short message (like your name). Why is the output still quite long?
+    • The program writes a bin file to the current directory. What is contained in the bin file?
+
+22. Run the PYCA_RSA_exercise_2_Bob_decrypts_the_msg.py program.
+    • What does the program do?
+    • How long was the private key? And, is that a safe choice?
+    • How should one store the private key?
+
+23. Run the PYCA_DH_example_x.py programs. Are the results as expected?
+
+24. What is KEM and what is it used for?
+
+25. What is the KEM keys called?
+
+26. Are KEM methods in use today?
+
+27. Are KEM methods quantum-safe?
