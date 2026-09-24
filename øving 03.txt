@@ -55,6 +55,7 @@ Exercise 03: Hash and MAC function
 
 15. For a M-D hash, what are the normal block sizes?
     Depends on the implementation, but can be any size.
+    512 and 1024 are popular.
     MD5, SHA-1, and SHA-256 use 512 bits.
 
 16. Explain what the padding would be for a 512-bit block M-D construction, where you have 12 “leftover” bits (“0110 1100 0001”).
