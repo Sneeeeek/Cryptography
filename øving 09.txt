@@ -1,0 +1,40 @@
+Exercises 09: The recipes layer
+0. What is X.509v3 and which standards body defined this recommendation?
+
+Creating a CSR:
+1. What is a CSR and what is it used for?
+
+2. In the cryptography example (for generating an RSA private key used for the CSR):
+    • What is the public exponent?
+    • Key size?
+    • Do you think this key size is adequate? (why/why not)
+3. Generate your own CSR, and include your own data to the fields.
+
+4. When writing the private key to disk (as a PEM file), the cryptography module allows us to encrypt the contents.
+    • What is the implementation for the “BestAvailableEncryption” option?
+    • What is the point of the “passphrase”?
+
+5. How can you check the contents of a CSR (PEM-file) with the OpenSSL command-line utility?
+    • Try it out with the CSR that you created in Q.3
+
+Creating Self-signed Certificates
+6. What are the advantages and disadvantages of using self-signed certificates? (discuss)
+
+7. Imagine that you are Bob. Should you trust a self-signed certificate issued by Alice? (why/why not)
+
+8. The lecture notes mention that you must remember to import the datetime module. What is it used for in the code?
+
+9. How long validity-period is used in the self-signed certificate in the example?
+
+10. Make your own self-signed certificate. Make sure it has 30 days validity.
+
+Cobblestone
+11. Who hosts the https://c2sp.org webpage and what is their mission?
+
+12. See https://c2sp.org/chunked-encryption: For Cobblestone, which hash function is used (full description of mode)?
+
+13. Run OpenSSL_version.py: What version of cryptography and OpenSSL do you run with?
+
+14. What is the purpose of the “context”? (explain)
+
+15. What are the benefits to using Cobblestone? (discuss)

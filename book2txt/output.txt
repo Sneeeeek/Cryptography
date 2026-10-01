@@ -1,169 +1,428 @@
-IEEE P802.11
-Wireless LANs
+The Rivest–Shamir–Adleman (RSA) cryptosystem revolutionized cryptography when it emerged in 1977 as the first public-key encryption scheme. Whereas classical, symmetric-key encryption schemes use the same secret key to encrypt and decrypt messages, public-key encryption (or asymmetric encryption) uses two keys: a public key, which anyone who wants to encrypt messages for you can use, and a private key, which is required to decrypt messages encrypted using the public key. This magic is the reason why RSA was a real breakthrough, and 40 years later, it’s still the paragon of public-key encryption and a workhorse of internet security. (One year prior to RSA, Whitfield Diffie and Martin Hellman introduced the concept of public-key cryptography, but their scheme was able to perform key distribution only in a public-key setting.)
 
-Unsafe at any key size; An analysis of the WEP encapsulation
+RSA
 
-Date: Oct 27, 2000
-Author: Jesse R. Walker
-Intel Corporation
-2211 NE 25th Avenue
-Hillsboro, Oregon 97124
-Phone: +1 503 712 1849
-Fax: +1 503 264 4843
-e-Mail: jesse.walker@intel.com
+Chapter 10
 
-Abstract
+RSA works by creating a trapdoor permutation, a function that transforms a number x to a number y in the same range, such that computing y from x is easy using the public key, but computing x from y is practically impossible unless you know the private key—the trapdoor. (Think of x as a plaintext and y as a ciphertext.)
 
-The IEEE 802.11 standard [1] defines the Wired Equivalent Privacy, or WEP, encapsulation of 802.11 data frames. The goal of WEP is to provide data privacy to the level of a wired network.
-The 802.11 design community generally concedes that the WEP encapsulation fails to meet its design goal, but widely attributes this failure to WEP’s use of 40-bit RC4 (see [2] or [3] for a description of RC4) as its encryption mechanism. Even at this late date, it is still repeatedly suggested, asserted, and assumed that WEP could meet its design goal by migrating from 40-bit to 104- or 128-bit RC4 keys instead.
-This report seeks dispel this notion once and for all: it is infeasible to achieve privacy with the WEP encapsulation by simply increasing key size. The submission reports easily implemented, practical attacks against WEP that succeed regardless of the key size or the cipher. In particular, as currently defined, WEP’s usage of encryption is a fundamentally unsound construction; the WEP encapsulation remains insecure whether its key length is 1 bit or 1000 or any other size whatsoever, and the same remains true when any other stream cipher replaces RC4. The weakness stems from WEP’s usage of its initialization vector. This vulnerability prevents the WEP encapsulation from providing a meaningful notion of privacy at any key size.
-The deficiency of the WEP encapsulation design arises from attempts to adapt RC4 to an environment for which it is poorly suited. This submission accordingly argues to replace RC4 by different cryptographic primitives in new work going forward. It identifies the characteristics needed by any encryption algorithm that can effectively provide data privacy in a wireless environment, and recommends candidate replacement algorithms and a replacement encapsulation.
+In addition to encryption, you can also use RSA to build digital signatures, wherein only the owner of the private key is able to sign a message, and the public key enables anyone to verify the signature’s validity.
 
-1 Introduction
+In this chapter, you’ll learn how the RSA trapdoor permutation works and why this permutation alone isn’t enough to build secure encryption and signatures. I also discuss RSA’s security relative to the factoring problem (see Chapter 9), ways to implement RSA securely, and how to attack it. We begin with an explanation of the basic mathematical notions behind RSA.
 
-The IEEE 802.11 standard [1] defines the Wired Equivalent Privacy, or WEP, encapsulation of 802.11 data frames. The goal of WEP is to provide data privacy to the level of a wired network.
-The 802.11 design community generally concedes that the WEP encapsulation fails to meet its design goal, but widely attributes this failure to WEP’s use of 40-bit RC4 (see [2] or [3] for a description of RC4) as its encryption mechanism. Even at this late date, it is still repeatedly suggested, asserted, and assumed that WEP could meet its design goal by migrating from 40-bit to 104- or 128-bit RC4 keys instead.
-This report seeks dispel this notion once and for all: it is infeasible to achieve privacy with the WEP encapsulation by simply increasing key size. The submission reports easily implemented, practical attacks against WEP that succeed regardless of the key size or the cipher. In particular, as currently defined, WEP’s usage of encryption is a fundamentally unsound construction; the WEP encapsulation remains insecure whether its key length is 1 bit or 1000 or any other size whatsoever, and the same remains true when any other stream cipher replaces RC4. The weakness stems from WEP’s usage of its initialization vector. This vulnerability prevents the WEP encapsulation from providing a meaningful notion of privacy at any key size.
-The deficiency of the WEP encapsulation design arises from attempts to adapt RC4 to an environment for which it is poorly suited. This submission accordingly argues to replace RC4 by different cryptographic primitives in new work going forward. It identifies the characteristics needed by any encryption algorithm that can effectively provide data privacy in a wireless environment, and recommends candidate replacement algorithms and a replacement encapsulation.
-This submission only discusses WEP’s inability to correctly encrypt data. It is well known that encryption without data authentication is unsafe in a network. Very simple data modification attacks (e.g., modifications of DNS responses to redirect TCP/IP implementations to rogue web sites) exist against WEP, and these can be trivially implemented when one of the attacks enumerated below succeed against even a single packet. Therefore, any changes to the WEP encapsulation should also incorporate a keyed message authentication code to protect the encrypted data stream, even though this report doesn’t focus on this aspect of WEP.
-Little in this submission is original. Almost all of the reasoning already appears in some form in [2], [3], [4], and [5].
-The remainder of this submission is organized as follows. Clause 2 reviews the WEP architecture. Clause 3 describes attacks to recover the key stream of any stream cipher as used by WEP, regardless of the cipher strength or key size. Clause 4 specializes the discussion to RC4 and identifies a number of problems making it unsuitable for the 802.11 environment. Finally Clause 5 summarizes the discussion by identifying more suitable cryptographic primitives and a better encapsulation scheme.
+The Math Behind RSA
 
-2 WEP overview
+When processing a message, whether encrypting or signing it, RSA first creates a big number from that message and processes it by performing multiplications between big numbers. Therefore, to understand how RSA works, you need to know what kind of big numbers it manipulates and how multiplication works on those numbers.
 
-IEEE 802.11 defines a mechanism for encrypting the contents of 802.11 data frames. This scheme uses five elements directly relevant to its analysis:
-a) A key shared between all the members of the BSS (there are really four shared keys, but this is irrelevant to the analysis).
-b) An encryption algorithm. For WEP this is the RC4 stream cipher, used to generate a key stream, which is XORed against plaintext to produce ciphertext.
-c) The corresponding decryption algorithm. For WEP this is the same as the encryption algorithm. RC4 is used to generate a key stream, which is XORed against the ciphertext to reproduce plaintext.
-d) A 24-bit initialization vector, or IV. WEP appends the IV to the shared key; WEP uses this combined key and IV to generate the RC4 key schedule. WEP selects a new IV for every packet.
-e) An encapsulation that transports the IV and the ciphertext from the sender (encryptor) to the receiver (decryptor).
-f) WEP also uses a CRC of the frame payload plaintext in its encapsulation. The CRC is computed over the data payload and then appended to the payload before encryption. WEP encrypts the CRC with the rest of the data payload.
+To encrypt or sign, RSA transforms a positive integer between 1 and n – 1, where n is a large number called the modulus. Such numbers, when multiplied together, yield another number that satisfies these criteria.
 
-The operation of WEP is very simple to describe.
-First, each member of the BSS is initialized with the shared key via an unspecified, implementation specific, out-of-band mechanism.
+These numbers form a group, which you denote Zn* and call the multiplicative group of integers modulo n. (See the mathematical definition of a group in “Groups” on page 189.)
 
-To send a WEP encapsulated frame, the sender calculates the CRC of the frame payload and appends it to the frame. It then selects a new IV, appends this to the shared key to form a “per-packet” key, and uses the result to generate an RC4 key schedule. The sender then uses RC4 to generate a key stream equal to the length of the frame payload plus CRC. The sender XORs the generated key stream against the plaintext payload data and CRC. The sender also inserts the IV into the appropriate field in the frame header, and sets a bit indicating this is a WEP encrypted packet. At this point, the WEP encapsulation is complete, and the frame can be sent to the peer.
-To process a WEP frame, the receiver checks the “encrypted” bit in the arriving frame. If it is set, the receiver extracts the IV from the frame, appends it to the BSS shared key, and generates the “per-packet” RC4 key schedule. RC4 is applied to the key schedule to produce a key stream the length of the packet’s encrypted payload. The receiver then XORs this key stream against the encrypted payload to extract plaintext. Finally the receiver verifies the CRC of the decrypted payload data to verify that the frame data correctly decrypted.
+For example, consider the group Z4* of integers modulo 4. Recall from Chapter 9 that a group must include an identity element (that is, 1) and that each number x in the group must have an inverse, a number y such that x × y = 1. How do you determine the set that makes up Z4*? Based on the definitions, you know that 0 is not in the group Z4* because multiplying any number by 0 can never give 1, so 0 has no inverse. The number 1 belongs to Z4* because 1 × 1 = 1, so 1 is its own inverse. However, the number 2 doesn’t belong in this group because you can’t obtain 1 by multiplying 2 with another element of Z4* (note that 2 isn’t coprime with 4, because 4 and 2 share the factor of 2). The number 3 belongs in the group Z4* because it is its own inverse within Z4*. Thus, you have Z4* = {1, 3}.
 
-Several features of this design require comment.
-The first is that the loss of a single bit of a data stream encrypted under RC4 causes the loss of all the data following the lost bit. This is because data loss desynchronizes the RC4 encryption and decryption engines. The resynchronization problem gets only worse as more bits become lost. Since 802.11 often drops entire packets, it infeasible to use a stream ciphers like RC4 across 802.11 frame boundaries. To be useful across packet boundaries, this environment instead requires that the cipher support a random access, “seek” type capability, where it is feasible to instantly and efficiently switch the cipher to any selected point in the key stream. Many stream ciphers offer random access support—any block cipher such as AES [8] in counter mode, for instance, or SEAL [9] for another. Instead of selecting a stream cipher with characteristics needed for a datagram environment, however, the WEP architecture accommodates itself to loss by reinitializing the cipher key schedule on every data frame.
-Stream ciphers have a second property that is particularly important to the analysis: it is unsafe to use the same key twice, ever. Suppose the cipher produces a key stream of bits
-k1 k2 k3…
-The encryptor uses the key stream sequence to encrypt the plaintext stream p1 p2 p3… into a ciphertext stream c1 c2 c3 … by XORing each plaintext bit with the corresponding key stream bit:
-ci = pi ⊕ ki, for i = 1, 2, 3, …
-(Most practical implementations actually XOR whole bytes or words instead of bits.) The decryptor recovers the plaintext stream from the ciphertext stream by XORing each ciphertext bit with the corresponding key stream bit:
-pi = ci ⊕ ki, for i = 1, 2, 3, … (*)
-The cipher stream is public knowledge, and it is presumed that adverasries will record the entire stream. If an adversary learns the plaintext value of bit i, she can recover the corresponding plaintext value of any other ciphertext stream encrypted from the same key stream: first compute the key stream bit
-ki = ci ⊕ pi
-and then use equation (*) to decrypt the corresponding bit of any other stream encrypted under the same key.
-The WEP design attempts to accommodate this second property by introducing the IV. WEP combines the IV with the key to produce a new frame specific encryption key.
+Now consider Z5*, the multiplicative group of integers modulo 5. As in Chapter 9, Z5* = {1, 2, 3, 4}. Indeed, 5 being prime, 1, 2, 3, and 4 are all coprime with 5, so the set of Z5* includes all of them. Let’s verify this: 2 × 3 mod 5 = 1; therefore, 2 is 3’s inverse, and 3 is 2’s inverse; note that 4 is its own inverse because 4 × 4 mod 5 = 1; and finally, 1 is again its own inverse in the group.
 
-3 Decrypting data without keys
+To find the number of elements in a group Zn* when n isn’t prime, you can use Euler’s totient function, which we write as φ(n), with φ representing the Greek letter phi. This function gives the number of elements coprime with n, which is the number of elements in Zn*. As a rule, if n is a product of prime numbers n = p1 × p2 × . . . × pm, the number of elements in the group Zn* is the following:
 
-This clause begins by describing problems with the WEP IV. Then it turns to practical techniques to recover the WEP RC4 key stream, based on the WEP IV deficiencies. Finally it closes with a discussion of some issues around the analysis.
+ϕ np pp () = − () 12 11 ×− () ×× . . . () m − 1
 
-3.1 WEP IV problems
+RSA deals only with numbers n that are the product of two large primes, usually noted as n = pq. The associated group Zn* then contains φ(n) = (p – 1)(q – 1) elements. By expanding this expression, you get the equivalent definition φ(n) = n – p – q + 1, or φ(n) = (n + 1) – (p + q), which expresses more intuitively the value of φ(n) relative to n.
 
-The WEP IV is 24 bits long. WEP appends the IV to the shared key to form a family of 224 keys. As described above, each frame transmission selects one of these 224 keys and encrypts the data under the key.
-This scheme suffers from a basic problem. Since a stream cipher key stream can never be reused, it obliges the BSS to change the base key as soon as its members have consumed all of the 224 keys derived from the base key. WEP defines no practical way to accomplish this, so in practice WEP keys are not replaced frequently enough to maintain the level of privacy intended. This leads to wide-spread key abuse; a single access point BSS running at 11 Mbps and with a typical packet distribution can exhaust the derived key space in about an hour. A multi-access point network with tens or hundreds or thousands of access points can exhaust the key space at a faster rate, indeed, inversely proportional to the number of access points.
-The problem is worse than this suggests, however. Since WEP shares the same base key among all the members of the BSS, and since the security of WEP depends on the <base-key, IV> pair never being recycled, WEP needs an IV avoidance algorithm, to prevent one node from reusing an IV already used by another. WEP defines no such algorithm, and it is unclear how to even begin to design one. A BSS could, for instance, partition the IV space among the BSS elements in a pre-defined manner, but this sort scheme either pre-supposes a static BSS membership static behavior, or some (secure) scheme to transfer an indication of which IVs have been used among members of the BSS, etc.
-The usual way to avoid this kind of difficulty is to randomly select the IV instead. Random selection of the IV, however, presents its own difficulties because of the Birthday Paradox (see [2] or [3]). The Birthday Paradox is named for the counter-intuitive fact that, in a group of people as small as 23, there is a 50% chance that two members of the group will share the same birthday. In general, if a set has n members, and elements are selected from the set one at a time with replacement, then the probability of a duplicate after two draws is p2 = 1/n and, for k ≥ 3, the probability of at least one duplicate is pk = pk–1 + (k–1) ⋅ 1/n ⋅ (1 – pk–1).
-In the WEP case the IV space takes n = 224, and we exceed a 50% chance of a collision among IVs after only k = 4823 ≈ 212 frames. The probability of collision is already 99% after 12,430 frames, or in 2 to 3 seconds of normal traffic at 11 Mbps. There is already a 10% chance of collision after 1881 frames, a 1% chance after 582, a 0.1% after 184 frames, 0.01% after 59, and 0.001% after only 19 frames. With randomly selected IVs, maintaining the five zeroes of assurance (0.000001%) becoming customary in many fields of computing requires changing the base key after all the members of a BSS have transmitted a total 6 frames under the key! The odds are a normal 11 Mbps BSS will begin to reuse keys in less than a second of operation, and there is a non-negligible probability that an attack can succeed well before this time has elapsed. The WEP IV space is far, far too small to protect against IV abuse.
-It is important to be clear on what this does not say. It does not say that 50% of the IVs (and hence keys) will collide at about 212 packets. It says that if an adversary collects a packet trace of about 212 frames, there is about a 50% chance that the trace will contain at least one duplicate IV. But this is all the help an attacker needs.
+The RSA Trapdoor Permutation
 
-3.2 Some attacks
+The RSA trapdoor permutation is the core algorithm behind RSA-based encryption and signatures. Given a modulus n and a number e, which you call the public exponent, the RSA trapdoor permutation transforms a number x from the set Zn* into a number y = xe mod n. In other words, it calculates the value that’s equal to x multiplied by itself e – 1 times modulo n and then returns the result. When you use the RSA trapdoor permutation to encrypt, the modulus n and the exponent e make up the RSA public key.
 
-So how does an attacker exploit the key reuse brought about by WEP’s IV duplication? There is no magic here. All of the attacks are standard. WEP does not protect against any of them.
-As with any stream cipher, an attacker can launch known plaintext and chosen ciphertext attacks. In today’s computing environments, these attacks are ridiculously easy. The attacker Eve, for instance, can forge e-mail from Bob, asking the victim Alice to e-mail a file with known content. A telephone call from Eve works just as well, if Alice knows Eve or Eve can pass herself off as Bob. If Eve does not know Alice, she can use an e-mail anonymizer to send spam to her. All of this appears completely innocent, but it causes known text to be encrypted. Eve captures the encrypted text with a packet sniffer and uses the relation
-ki = ci ⊕ pi
-to recover the key stream. She can save any key streams generated this way, each indexed by the appropriate IV, and immediately decrypt any WEP frame she sees later (or appears earlier in the packet trace!) with the same IV.
-Eve can work a little harder, with two sniffers, one on the radio link and one outside the firewall of the organization being attacked. Using a bit of traffic analysis, it is not difficult to correlate the unencrypted traffic recorded from outside the firewall with encrypted traffic captured from the over-the-air link. She repeats the same process above to recover more key streams.
-When 802.11 is used as the data link for a TCP/IP network, every data frame contains an IP datagram conveying large amounts of known plaintext. In such an environment Eve can recover a partial key stream for every frame sent. Traffic analysis can usually identify the type of traffic fairly accurately even when it is encrypted, and this information can be used to guess the values of variable fields in the packet headers, such as IP addresses and protocol numbers. This reveals even more of the data and hence key stream. The known plaintext from a single DHCP exchange can provide sufficient information to decode almost the entire TCP/IP header of every subsequent IP datagram encrypted by the DHCP client. Similarly, any “decrypted” packet can provide context and hints to help identify the plaintext of a still not fully decrypted packet, and this process can continue until the key streams are revealed for almost every IV.
+To get x back from y, you can use another number, d, to compute the following:
 
-As easy as these attacks are, they are largely for amateurs; there is no need to work this hard; at 24 bits, collisions come to you rapidly, one on the order of every second or two. A serious attacker will simply trace the 802.11 frames and XOR together ciphertext streams produced under the same IV. If an IV is used at least twice, then the packet trace will show the cipher streams
-ci = pi ⊕ ki, for i = 1, 2, 3, …
-ci′ = pi′ ⊕ ki, for i = 1, 2, 3, …
-produced from the key stream k1 k2 k3… associated with the IV. XORing these together yields
-pi′ ⊕ pi, for i = 1, 2, 3, …
-i.e., the attacker knows with certainty the XOR of corresponding plaintext bits from p1′ p2′ p3′… and p1 p2 p3… This means the attacker can know when each bit is the same or different in the two streams, so can immediately reduce the number of possibilities for each byte pair <b, b′> from the two streams from 216 possibilities to 28. Having a third or a fourth frame encrypted under the same IV can reduce the possibilities for the two plaintexts even more. These facts mean pattern recognition techniques can often split apart the intertwined plaintext streams.
-For instance, in any computing system a considerable percentage of actual data exchanged over a link is ordinary text from some natural language. In any natural language represented by an alphabet, certain character sequences occur more frequently than others, and the probabilities for various character sequences have been computed from empirical measurement. These facts mean that with a fairly high probability the adversary can easily and mechanically eliminate all but one of the 28 possibilities for almost all of the byte pairs <b, b′>. The WEP checksum can be used to referee among guesses for the few that cannot be eliminated by probabilities. In this way the attacker can recover the plaintext and the key stream without knowing any of the plaintext in advance. There is a good reason why the operating instructions for RC4 explicitly warn never to use the same key twice!
-As already noted, WEP as constituted today has no automated mechanism to change the BSS key, so people change it only infrequently, typically on the order of days or weeks or even months. After n hours of typical use, it is likely that the overwhelming number of IVs have been used at least n/2 times, so a packet trace of all the BSS traffic provides collisions among most of the IVs. In this way, an attacker can easily build up a dictionary of key streams for every IV. Since WEP frames are small, and since there are only 224 possible IVs, an attacker using even obsolete hardware can afford to store the key streams for all the IVs associated with thousands of base keys. Given that people tend to cycle through a small number manually configured base keys, an attacker usually only has to resort to these techniques only a few times before the BSS’s privacy is permanently compromised. It is simply not worth trying to provide any privacy if this is the best we can do.
-There is still one more problem with WEP’s use of the IV that is worth noting. As we have seen, it is feasible to recover the key streams associated with a large number of IVs in a short time. It is mechanical to use RC4’s definition along with the key stream and plaintext to reconstruct the underlying key schedule. Not every recovered key stream will reconstruct the entire key schedule, but we can expect to recover a certain amount of these. When we have recovered a full key schedule, it is worth asking ourselves: can we also recover the key used to compute it?
-We know the IV corresponding to the key schedule is the least significant 24 bits of the key, and we know the deterministic algorithm generating key schedule from the key. Can we compute the key using this knowledge?
-Questions like this worry cryptographers. WEP’s highly questionable method of concatenating the IV directly to the base key exposes the base key to direct attack. Because of this, it would also be advisable to find a new way to mix the IV with the base key.
+y d = x e d mod n
 
-3.3 Discussion
+Because d is the trapdoor that allows you to decrypt, it’s part of the private key in an RSA key pair, meaning it should always be kept secret. The number d is also called the secret exponent.
 
-Attacks like these could be mounted against any protocol based on any stream cipher, but they are not, because they are ineffective in most environments. Why are they significant against WEP? why not against, e.g., SSL [7]? The reason is applications like SSL do not use RC4 the same way WEP uses it. SSL is designed to not reuse keys with any significant probability. In SSL, one random, e.g., 128-bit key is selected for an entire session. The key is not replaced on every packet. SSL can do this because it operates RC4 over a reliable data channel that does not lose data, so it can guarantee no synchronization loss between the encryptor and decryptor. When SSL replaces a key, it is not only the upper 24-bits that vary; it is the entire 128-bit key. This means the attacker has to collect samples from about 264 SSL ciphertext streams rather than the 212 needed to gain the same level of advantage in the case of WEP. That is, SSL’s usage of the same encryption algorithm costs an attacker 252, or about 4,000,000,000,000,000, times more than WEP’s.
-SSL is too different from WEP for this comparison to be very meaningful. It is therefore instructive to examine how IPsec [6] avoids key collisions, as the encapsulation problem it faces is similar to 802.11’s. IPsec uses four mechanisms:
-1. It uses a unique key for each direction of each session over each (virtual) link. 3DES is the default cipher, and it has an effective key strength of 112 bits (the actual key size is 168 bits, but meet-in-the-middle attack against the 3DES construction diminishes the key strength). This means that there must be about 256/2 = 255 sessions before there is any significant chance of collision between two randomly generated keys. An attacker has to assemble a ridiculously large database of ciphertexts before he has any hope of a discovering a collision. And 255 requires about 236 (64 billion) new sessions each second over twenty years, and the attacker somehow has to capture them all.
-2. When using 3DES, each session takes its IVs from a 64-bit space (the IV comes from a 128-bit space when AES is used). This means there is no significant chance of a randomly selected IV collision until after about 232 packets. By using such a large IV space, IPsec can avoid an impossible to define IV avoidance algorithm, relying instead on probability to make collisions too unlikely to worry about. The attacker, on the other hand, needs 232 samples of ciphertext for each key in his database to make its existence worthwhile.
-3. IPsec allows a single key to encrypt at most 232 packets. The probabilities add up against an attack even if someone were able to somehow collect the necessary ciphertexts.
-4. IPsec uses CBC mode. CBC mode uses the IV as a salt, not as part of the key. A salt is public information to help de-correlate the information encrypted under the key, so patterns in the plaintext become invisible in the ciphertext. And the way CBC mode works (XOR of the IV with the plaintext before encryption) makes IV reuse less catastrophic than in the WEP case.
-Could the WEP encapsulation becomes safe if WEP migrates to per-link keys? Anyone who has followed the above analysis knows by now the answer is no, unless at a minimum WEP also defines an algorithm to make IV reuse a very rare event, and then also installs a new base key whenever the IV is in danger of repeating.
-And even this “unless” is provisional at best, because presupposes there are no other fatal attacks against the WEP encapsulation. For instance, if each link has both a key for sending and receiving, then a revised WEP might try to define a deterministic algorithm to compute the next IV. For example, the algorithm might be to use a counter to represent the IV, or it might specify to execute the next step of a linear congruential pseudo-random number generator, allowing an implementation to avoid reuse of an IV until cycling through the entire space. But there is no evidence that such a scheme works from a security perspective, that the correctness of the encryption does not somehow depend on the randomness of the IV. Indeed, when the cipher is RC4, this determinism allows an attacker to launch weak key attacks on the cipher; see Section 4.
-The problem is the existing WEP IV-based scheme is ad hoc, based purely on the notion that no attacks against it are evident to the designers, but, as we have seen, the scheme is fatally flawed in the light of its design goals. As a general rule, cryptographers distrust every ad hoc scheme until it is proven innocent, and that is the advice here: abandon the existing WEP scheme in favor of an algorithm known to provide privacy.
-How a cipher is used is every bit as important as the strength of the cipher and its key length. WEP uses RC4 improperly, and because of this, fails to provide a meaningful notion of privacy. There are lots of ways to use a cipher securely, but WEP fails to make use of any of these proven techniques.
-Another question that has been asked is whether the WEP encapsulation could be strengthened by including a spoiler. A spoiler is a random string inserted at the beginning of the plaintext data to be encrypted, with the intent of acting much like an IV, to de-correlate the encrypted text that follows. The answer here is also no, because the key stream generated by RC4 provides no feedback mechanism based on any previous plain or ciphertext, so the spoiler does not alter the key stream. Spoilers only provide security when the cipher is used in a feedback mode, as in CBC and OFB.
+Of course, d isn’t just any number; it’s the number such that e multiplied by d is equivalent to 1 and therefore such that xed mod n = x for any x. More precisely, you must have ed mod φ(n) = 1 to get xed = x1 = x and to decrypt the message correctly. Note that you compute modulo φ(n) and not modulo n here because exponents behave like indexes of elements of Zn* rather than as the elements themselves. Because Zn* has φ(n) elements, the index must be less than φ(n).
 
-4 Problems with RC4
+The number φ(n) is crucial to RSA’s security. In fact, finding φ(n) for an RSA modulus n is equivalent to breaking RSA because you can easily derive the secret exponent d from φ(n) and e by computing e’s inverse. Hence p and q should also be secret, since knowing p or q gives φ(n) by computing (p – 1)(q – 1) = φ(n).
 
-Most of the analysis thus far applies to any stream cipher, although we have noted a few problems with RC4 that makes its use by WEP a dubious decision, the most important being it has no random access capability. RC4 also suffers from one more problem that makes its applicability to 802.11 even more questionable.
-One in every 256 RC4 key is “weak” [10], which means the key schedules for these keys are less correlated with the key than they ought to be. This makes it far easier to cryptanalyze data encrypted under these keys, in case we fix enough of the other WEP problems to justify its continued use in new submissions. If WEP were to continue to use RC4, there is a standard fix to this problem that should be incorporated into WEP’s definition. This is to run the RC4 key stream generator at least 256 steps each time its key schedule is re-initialized, i.e., to begin encrypting with the 257th byte of the key stream instead of the first. Given that WEP already has to reinitialize the RC4 key schedule with every frame, this additional overhead is probably too much cost to bear.
+NOTE φ(n) is called the order of the group Zn*; the order is an important characteristic of a group, which is essential to other public-key systems such as Diffie–Hellman and elliptic curve cryptography.
 
-One final problem should be noted but is not a concern. The key stream RC4 produces exhibits an empirically measurable bias, meaning it only imperfectly hides correlation in the encrypted data. This problem is inconsequential as long as WEP uses only an infinitesimal part of the generated key stream (there is not sufficient data to correlate, since WEP recomputes the key schedule on every frame) and far easier attacks against WEP’s use of RC4 exist.
+RSA Key Generation and Security
 
-5 Summary and recommendations
+Key generation is the process by which an RSA key pair is created, namely, a public key (modulus n and public exponent e) and its private key (secret exponent d). As the numbers p and q (such that n = pq) and the order φ(n) should also be secret, you will often include them as part of the private key.
 
-This submission has identified significant deficiencies in the WEP data encapsulation that renders its data privacy claims meaningless, regardless of the key size. Increasing the WEP key from 40 to 104 or 128 bits does nothing to increase WEP’s resistance to attack. This is because the deficiencies are related to how WEP uses cryptography, not the key size. WEP’s design attempts to adapt RC4 to an environment for which it is poorly suited, with potentially catastrophic consequences for its intended users. Thus, to meet its goal of wired equivalent privacy, the WEP encapsulation needs significant reconstruction.
-This section recommends changes to WEP to address these problems. It recommends a cipher, a mode of operation for the cipher, a key derivation algorithm (at least for manual keys), and random data recommendations. It concludes by recommending a new WEP encapsulation.
+To generate an RSA key pair, first pick two random prime numbers, p and q, and compute φ(n) from them. Then compute d as the inverse of e. Listing 10-1 shows how this works using SageMath (https://www.sagemath.org), an open source Python-esque environment that includes many mathematical packages.
 
-5.1 Cipher and mode of operation
+sage: p = random_prime(2^32); p
+1103222539
+sage: q = random_prime(2^32); q
+17870599
+sage: n = p*q; n
+19715247602230861
+sage: phi = (p-1)*(q-1); phi
+19715246481137724
+sage: e = random_prime(phi); e
+13771927877214701
+sage: d = xgcd(e, phi); d
+15417970063428857
+sage: mod(d*e, phi)
+1
 
-All new symmetric key encryption efforts starting now should be based on the AES [8] block cipher. It is thought to be as good as any symmetric key cipher in the public domain, and allows for very efficient implementations over a very wide range of environments (8-bit processors to super computers). This submission recommends against RC4 for any future WEP encapsulation scheme; attempts to twist WEP around RC4 have led to enough problems already. The reformulated WEP should instead employ 128-bit AES as the mandatory to implement cipher.
-This submission also recommends that WEP use AES in Offset Codebook Mode (OCB, [11]). This is a stream cipher that also produces a message authentication code, preventing an adversary from forging messages. The data encrypted under OCB is the same length as the plaintext data, a single key is used for both encryption and authentication, and it requires only the AES encryption, not decryption, engine. It is also a parallelizable mode, allowing for very high throughput. OCB has been optimized to minimize the number of calls to lower level cryptographic primitives, and can both encrypt/decrypt and tag/verify a message in a single pass.
-The OCB state is the key, a stride, which provides the offset in the mode’s name, and an IV. The stride and the IV are of the cipher block size (128 bits for AES). The stride is computed once per session. The per-frame overhead of OCB is 128 bits for the IV, and 128 bits for the OCB authentication tag.
+Listing 10-1: Generating RSA parameters using SageMath
 
-5.2 Session key derivation
+Here you use the random_prime() function to pick random primes p and q, which are lower than a given argument. Next, you multiply p and q to get the modulus n and φ(n), which is the phi variable. You then generate a random public exponent, e, by picking a random prime less than phi to ensure that e has an inverse modulo phi.
 
-This submission recommends a session key derivation algorithm in the case of a manually configured base key, as used by WEP today. It does not recommend an algorithm for session key derivation when dynamic keying is available, because the scheme should incorporate state from the dynamic keying operation, to tie the key to the particular session that negotiated the key.
-This algorithm produces two session keys, one for sending and the other for receiving.
-1. Concatenate the (a) BSSID, (b) the sender’s MAC address, and (c) the receiver’s MAC address to produce a string. The order is important, as the two MAC addresses are reversed for sending and receiving.
-2. Using the base key (manually configured key) and an IV of 128 zero bits, run the OCB-AES algorithm on the concatenated string. The session key is the authentication tag output by this:
-session-key ← OCB-AES-tagbase-key(0, BSSID | sender-mac-addr | receiver-mac-address)
-Here ‘a | b’ means the concatenation of strings a and b.
+You use the xgcd() function from Sage to generate the associated private exponent d. This function computes the numbers s and t given two numbers, a and b, with the extended Euclidean algorithm such that as + bt = GCD(a, b). Finally, you check that ed mod φ(n) = 1 to ensure that d correctly inverts the RSA permutation.
 
-The motives for this algorithm are (a) to remove the base-key from direct attack and (b) weakly tie the session key to the particular parties using it. Under this algorithm different sets of peers use different session keys, even though all the members of the BSS share the same base key. Note that the keys produced by this algorithm are still subject to dictionary attack when the base key is a password or derived from a password by techniques such as PCKS #5 [12]. And all the keys are subject to spoofing if the base key is revealed to an adversary. There is no magic that can avoid these weaknesses.
+NOTE I’ve used a 64-bit modulus n in Listing 10-1 to avoid multiple pages of output, but in practice an RSA modulus should be at least 2,048 bits to be secure.
 
-5.3 Random data recommendations
+Now you can apply the trapdoor permutation, as Listing 10-2 shows.
 
-The security of the recommended scheme depends critically on a source of cryptographically secure random numbers. Implementations must appear to produce random numbers for their nonces, even across power cycles and reboots. [13] and [14] discuss cryptographic requirements for randomness and provide useful implementation guidance.
+sage: x = 1234567
+sage: y = power_mod(x, e, n); y
+19048323055755904
+sage: power_mod(y, d, n)
+1234567
 
-5.4 Recommended encapsulation
+Listing 10-2: Computing the RSA trapdoor permutation back and forth
 
-The new WEP encapsulation this submission proposes consists of
-1. A 128-bit IV. At session initiation the encrypter selects this randomly. On subsequent frames the encrypter may use the last 128-bits of encrypted data from the previous encrypted frame.
-2. A 32-bit sequence number. This will be the first quantity encrypted. It indicates the number of frames sent under the present key. When manual keys are used, the sequence number is not used and set to 0. When dynamic keys are used, it is initialized to zero when the key is established.
-3. The LLC data payload. This will also be encrypted.
-4. The 128-bit OCB data authentication tag.
+You assign the integer 1,234,567 to x and then use the power_mod(x, e, n) function, the exponentiation modulo n, or xe mod n in equation form, to calculate y. After computing y = xe mod n, you calculate yd mod n with the trapdoor d to return the original x.
 
-The encapsulation scheme thus adds 36 bytes to the frame size. This is the cost of privacy in a network these days.
-To WEP encapsulate a frame, the encrypter first checks that the counter has not yet assumed the maximum value. If it has, the data stream encrypted under the present key terminates until the key management system replaces the base key. If the counter has not yet assumed its maximum value, and if dynamic keys are used, the encrypter increments the counter by 1 and inserts the new counter value into the appropriate location in the frame. The encrypter then selects the nonce and OCB encrypts/tags the counter and data. It inserts the OCG authentication tag at the tail of the frame. The frame is now ready to transmit.
-To WEP decapsulate a received frame, the decryptor locates the correct context by the arriving MAC address. It uses the IV from the frame to OCB decypt the packet and verify its authenticity. If the session is dynamically keyed, it finally verifies that the counter is greater than any prior received value, i.e., the WEP receiver maintains a receive window size of 1. This prevents replay attack in the case when the session is dynamically keyed. Replay prevention is not feasible without dynamic keying
+How hard is it to find x without the trapdoor d? An attacker able to factor big numbers could break RSA by recovering p and q and then φ(n) to compute d from e. Another risk to RSA lies in an attacker’s ability to compute x from xe mod n, or eth roots modulo n, without necessarily factoring n. While both risks seem closely connected, we don’t know for sure that they’re equivalent.
 
-6 References
+Assuming that factoring and finding eth roots are about equally hard, RSA’s security level depends on three factors: the size of n, the choice of p and q, and how the trapdoor permutation is used. If n is too small, one could factor it in a realistic amount of time, revealing the private key. To be safe, n should be at least 2,048 bits long (a security level of about 90 bits, requiring a computational effort of about 290 operations) but preferably 4,096 bits long (a security level of approximately 128 bits). The values p and q should be unrelated random prime numbers of similar size. If they’re too small or too close together, it’s easier to determine their value from n. Finally, you shouldn’t use the RSA trapdoor permutation directly for encryption or signing, as I’ll discuss shortly.
 
-[1] IEEE Std 802.11-1997, Part 11: Wireless LAN Medium Access Control (MAC) and Physical Layer (PHY) specifications
-[2] B. Schneier, Applied Cryptography, 2nd Addition, Wiley, 1997.
-[3] A. J. Menezes, P. C. van Orschot, and S. A. Vanstone, Handbook of Applied Cryptography, CRC, 1996
-[4] S. M. Bellovin, “Problem Areas for IP Security Protocols”, 6th USENIX UNIX Security Conference
-[5] D. A. McGrew and S. R. Fluhrer, “The Stream Cipher Encapsulating Security Payload”, draft-mcgrew-ipsec-scesp-01.txt, IETF, July 2000
-[6] S. Kent and R. Atkinson, RFC 2401, Security Architecture for the Internet Protocol, IETF, November 1998
-[7] T. Dierks and C. Allen, RFC 2246, The TLS Protocol, Version 1.0, IETF, January 1999
-[8] J. Daemon and V. Rijmen, AES Proposal: Rijndael, available from http://csrc.nist.gov/encryption/aes/
-[9] P. Rogaway and D. Coppersmith, “A Software-Oriented Encryption Algorithm”, in Fast Software Encryption, Cambridge Security Workshop, Springer-Verlag, 1994
-[10] A. Roos, A Class of Weak Keys in the RC4 Stream Cipher, attachment to e-mail to cipherpunks@toad.com, September 22, 1995
-[11] P. Rogaway, OCB Mode: Parallelizable Authenticated Encryption, available from http://csrc.nist.gov/encryption/aes/
-[12] PKCS #5: Password-Based Encryption Standard, RSA Laboratories, November 1993.
-[13] D. Eastlake, S. Crocker, and J. Schiller, RFC 1750, Randomness Recommendations For Security, IETF, December 1994
-[14] P. Gutman, Random Number Generation, available as http://www.cryptoengines.com/~peter/06_random.pdf
+Encrypting with RSA
+
+Typically, RSA is used in combination with a symmetric encryption scheme, where RSA encrypts a symmetric key that serves to encrypt a message with a symmetric cipher, such as AES-GCM. But encrypting a message or symmetric key with RSA is more complicated than simply converting the target to a number x and computing xe mod n.
+
+In the following subsections, I explain why a naive application of the RSA trapdoor permutation is insecure and how strong RSA-based encryption works.
+
+Textbook RSA Encryption’s Malleability
+
+The phrase textbook RSA encryption describes the simplistic RSA encryption scheme wherein the number exponentiated contains only the message you want to encrypt. For example, to encrypt the string RSA, you first convert it to a number—for example, by concatenating the ASCII encodings of each of the three letters as a byte: R (byte 52), S (byte 53), and A (byte 41). The resulting byte string 525341 is equal to 5,395,265 when converted to decimal, which you might then encrypt by computing 5,395,265e mod n. Without knowing the secret key, there’s no way to decrypt the message—at least in theory.
+
+However, textbook RSA encryption is deterministic: if you encrypt the same plaintext twice, you’ll get the same ciphertext twice. And there’s an even bigger problem: given two textbook RSA ciphertexts y1 = x1e mod n and y2 = x2e mod n, you can derive the ciphertext of x1 × x2 by multiplying these ciphertexts together:
+
+y1 × y2 = x1e mod n × x2e mod n = (x1 × x2)e mod n
+
+The result is (x1 × x2)e mod n, the ciphertext of the message x1 × x2 mod n.
+
+An attacker could create a new valid ciphertext from two RSA ciphertexts, compromising the security of your encryption by allowing them to deduce information about the original message. This weakness makes textbook RSA encryption malleable. (If you know x1 and x2, you can compute (x1 × x2)e mod n, too, but if you know only y1 and y2, you shouldn’t be able to multiply ciphertexts and get the ciphertext of the multiplied plaintexts.)
+
+Another problem with the naive textbook RSA encryption is the existence of “special” messages. Whatever n and e are, 1e = 1. Thus, the message 1 is left unchanged through encryption. Textbook RSA has many other problems, but you’ll learn to avoid them by using a strong RSA encryption.
+
+Strong RSA Encryption with OAEP
+
+To make RSA ciphertexts nonmalleable, the number exponentiated during encryption should combine message data with additional data called padding, as Figure 10-1 shows.
+
+P
+K
+C Padding
+algorithm RSA(n,e)
+
+Figure 10-1: Encrypting a symmetric key, K, with RSA using
+(n, e) as a public key
+
+The standard way to encrypt with RSA in this fashion is to use Optimal Asymmetric Encryption Padding (OAEP), a combination commonly called RSA-OAEP. This scheme involves creating a bit string as large as the modulus by padding the message with extra data and randomness before applying the RSA function.
+
+NOTE Official documents such as the PKCS#1 standard and NIST’s Special Publication 800-56B refer to OAEP as RSAES-OAEP. OAEP improves on the earlier method PKCS#1 v1.5, which is one of the first in a series of Public-Key Cryptography Standards (PKCS) by RSA. It is markedly less secure than OAEP yet has remained in use in many systems after OAEP’s introduction.
+
+Security
+
+OAEP uses a PRNG to ensure the indistinguishability and nonmalleability of ciphertexts by making the encryption probabilistic. It’s been proven secure as long as the RSA function and the PRNG are secure and, to a lesser extent, the hash functions aren’t too weak. You should use OAEP when encrypting with RSA, rather than its predecessor, the standard PKCS#1 v1.5.
+
+Encryption
+
+Encrypting with RSA in OAEP mode requires a message (such as a symmetric key, K), a PRNG, and two hash functions. To create the ciphertext, use a given modulus n long of m bytes (that is, 8m bits and therefore an n lower than 28m). To encrypt K, form the encoded message as
+
+M = H || 00 . . . 00 || 01 || K
+
+where H is an h-byte constant defined by the OAEP scheme, followed by as many 00 bytes as necessary and a 01 byte. Figure 10-2 shows how to process this encoded message, M.
+
+R
+Hash1
+H || 000000 . . . 0001 || K
+Hash2
+P = 00
+
+Figure 10-2: Encrypting a symmetric key, K, with
+RSA-OAEP, where H is a fixed parameter and R is
+random bits
+
+You generate an h-byte random string R and set M = M ⊕ Hash1(R), where Hash1(R) is as long as M. Next, set R = R ⊕ Hash2(M), where Hash2(M) is as long as R. Now use these new values of M and R to form an m-byte string P = 00 || M || R, which is as long as the modulus n and which can be converted to an integer number less than n. This conversion results in the number x, which you then use to compute the RSA function xe mod n to get the ciphertext.
+
+To decrypt a ciphertext y, first compute x = yd mod n and, from this, recover the final values of M and R. Next, retrieve M’s initial value by calculating M ⊕ Hash1(R ⊕ Hash2(M)). Finally, verify that M is of the form H || 00 . . . 00 || 01 || K, with an h-byte H and 00 bytes followed by a 01 byte.
+
+In practice, the parameters m and h (the length of the modulus and the length of Hash2’s output, respectively) are typically m = 256 bytes (for 2,048-bit RSA) and h = 32 (using SHA-256 as Hash2). This leaves m – h – 1 = 223 bytes for M, of which up to m – 2h – 2 = 190 bytes are available for K (the “– 2” is due to the 01 byte separator in M). The Hash1 hash value is then composed of m – h – 1 = 223 bytes, which is longer than the hash value of any common hash function. To build a hash with such an unusual output length, the RSA standard specification defines a mask generating function technique to create hash functions that return arbitrarily large hash values from any hash function. As another approach, use an extendable output function (XOF) such as SHAKE or BLAKE3, although this differs from the standard specifications.
+
+Signing with RSA
+
+Digital signatures can prove that the holder of the private key tied to a particular digital signature signed some message, typically to endorse its content. Because only the private key holder knows the private exponent d, no one else can compute a signature y = xd mod n from some value x, but everyone can verify ye mod n = x given the public exponent e. In principle, one can use that verified signature as evidence to demonstrate that the private-key holder signed some particular message; this is a property called nonrepudiation.
+
+It’s tempting to see RSA signatures as the converse of encryption, but they aren’t. Signing with RSA isn’t the same as encrypting with the private key. Encryption provides confidentiality, whereas digital signatures help prevent forgeries. The most salient example of this difference is that it’s OK for a signature scheme to leak information on the message signed, because the message isn’t secret. For example, a scheme that reveals parts of the messages could be a secure signature scheme but not a secure encryption scheme.
+
+Because of the necessary processing overhead, public-key encryption can process only short messages, which are usually secret keys rather than actual messages. A signature scheme, however, can process messages of arbitrary sizes by using their hash values Hash(M) as a proxy, and it can be deterministic yet secure. Like RSA-OAEP, RSA-based signature schemes can use a padding scheme, but they can also use the maximal message space allowed by the RSA modulus.
+
+Textbook RSA Signatures
+
+A textbook RSA signature is the method that signs a message, x, by directly computing y = xd mod n, where x can be any number between 1 and n – 1. Like textbook encryption, textbook RSA signing is simple to specify and implement but insecure in the face of several attacks. One such attack involves a trivial forgery: upon noticing that 1d mod n = 1 and (n – 1)d mod n = n – 1, regardless of the value of the private key d, an attacker can forge signatures of 1 or n – 1 without knowing d.
+
+More worrying is the blinding attack. For example, say you want to get a third party’s signature on some message, M, that you know they’d never knowingly sign. To launch this attack, first find some value, R, such that ReM mod n is a message that your victim would knowingly sign. Next, you’d convince them to sign that message and to show you their signature, which is equal to S = (ReM)d mod n, or the message raised to the power d. Given that signature, you can derive the signature of M, namely, Md, with the aid of some straightforward computations.
+
+Because you can write S as (ReM)d = RedMd, and because Red = R (by definition), you have S = (ReM)d = RMd. To obtain the signature Md, divide S by R as follows:
+
+This is often a practical and powerful attack.
+
+The PSS Signature Standard
+
+The RSA Probabilistic Signature Scheme (PSS) is to RSA signatures what OAEP is to RSA encryption. It was designed to make message signing more secure, thanks to the addition of padding data.
+
+Figure 10-3 demonstrates that PSS combines a message narrower than the modulus with some random and fixed bits before RSAing the results of this padding process.
+
+P
+Hash(M)
+S Padding
+algorithm RSA(n,d)
+
+Figure 10-3: Signing a message, M, with RSA and with the PSS
+standard, where (n, d) is the private key
+
+Like all public-key signature schemes, PSS works on a message’s hash rather than on the message itself. Signing Hash(M) is secure only if the hash function is collision resistant. You can thus sign messages of any length because after hashing a message, you’ll obtain a hash value of the same fixed length regardless of the message’s original length.
+
+Why not sign by just applying the OAEP encryption to Hash(M)? Unfortunately, you can’t. Although similar to PSS, OAEP has been proven secure only for encryption, not for signatures.
+
+Like OAEP, PSS also requires a PRNG and two hash functions. One, Hash1, is a typical hash with a standard output length, such as SHA-256. The other, Hash2, is a wide-output hash like OAEP’s Hash2. Like OAEP, PSS can use the mask-generating function (MGF) construction to build such a hash.
+
+The PSS signing procedure works as follows (where h is Hash1’s output length):
+
+1. Pick an r-byte random string R using the PRNG.
+2. Form an encoded message M′ = 0000000000000000 || Hash1(M) || R, long of h + r + 8 bytes (with 8 zero bytes at the beginning).
+3. Compute the h-byte string H = Hash1(M′).
+4. Set L = 00...00 || 01 || R, or a sequence of 00 bytes followed by a 01 byte and then R, with a number of 00 bytes such that L is long of m – h – 1 bytes (the byte width m of the modulus minus the hash length h minus 1).
+5. Set L = L ⊕ Hash2(H) to replace the previous value of L with a new value.
+6. Convert the m-byte string P = L || H || BC to a number, x, lower than n. Here, the byte BC is a fixed value appended after H.
+7. Given the value of x just obtained, compute the RSA function xd mod n to obtain the signature.
+8. To verify a signature given a message, M, compute Hash1(M) and use the public exponent e to inverse the RSA function and retrieve L, H, and then M′ from the signature, checking the padding’s correctness at each step.
+
+In practice, the random string R (called a salt t in the RSA-PSS standard) is usually as long as the hash value. For example, if you use n = 2,048 bits and SHA-256 as the hash, the value L is m – h – 1 = 256 – 32 – 1 = 223 bytes, and the random string R would typically be 32 bytes.
+
+Like OAEP, PSS is provably secure, standardized, and available in many cryptographic software utilities and libraries, including OpenSSL and the Go language’s cryptography module. Also like OAEP, it looks needlessly complex and is prone to implementation errors and mishandled corner cases. Unlike RSA encryption, there’s a simpler alternative to PSS for signing: without a PRNG, with a single hash function, and without padding.
+
+Full Domain Hash Signatures
+
+Full Domain Hash (FDH) is the simplest signature scheme you can imagine. To implement it, convert the byte string Hash(M) to a number, x, and create the signature y = xd mod n, as in Figure 10-4.
+
+Hash(M) RSA(n,d) S
+
+Figure 10-4: Signing a message with RSA using the Full Domain Hash technique
+
+Signature verification is straightforward, too. Given a signature that’s a number y, compute x = ye mod n and compare the result with Hash(M). It’s boringly simple, deterministic, yet secure. So why bother with the complexity of PSS?
+
+PSS was released after FDH, in 1996, and it has a security proof that inspires more confidence than FDH. Specifically, its proof offers slightly higher security guarantees than the proof of FDH, and its use of randomness helped strengthen that proof.
+
+These stronger theoretical guarantees are the main reason why many cryptographers prefer PSS over FDH, but most applications using PSS today could switch to FDH with no meaningful security loss. In some contexts, however, it’s viable to use PSS instead of FDH because PSS’s randomness protects it from some attacks on its implementation, such as the fault attacks we’ll discuss in “How Things Can Go Wrong” on page 211.
+
+In any case, RSA signatures (PSS or FDH) are less and less used. Signatures based on elliptic curves, such as ECDSA and EdDSA, have gained in popularity, not least because their calculation of a signature is much faster (although signature verification is often faster with RSA).
+
+RSA Implementations
+
+I hope you’ll never have to implement RSA from scratch. If you’re asked to, run as fast as you can and question the sanity of the person who asked you to do so. It took decades for cryptographers and engineers to develop RSA implementations that are fast, sufficiently secure, and ideally free of debilitating bugs, so it isn’t wise to reinvent RSA. Even with all the documentation available, it would take months to complete this daunting task.
+
+Typically, when using RSA in software, you’ll use a library or API that provides the necessary functions to carry out RSA operations. For example, the Go language has the following function in its crypto package (from https://go.dev/src/crypto/rsa/rsa.go):
+
+func EncryptOAEP(hash hash.Hash, random io.Reader, pub *PublicKey, msg []byte,
+label []byte) (out []byte, err error)
+
+The function EncryptOAEP() takes a hash function, a PRNG, a public key, a message, and a label (an optional parameter of OAEP) and returns a ciphertext and an error code. When you call EncryptOAEP(), it calls encrypt() to compute the RSA function given the padded data, as Listing 10-3 shows.
+
+func encrypt(c *big.Int, pub *PublicKey, m *big.Int) *big.Int {
+ e := big.NewInt(int64(pub.E))
+ c.Exp(m, e, pub.N)
+ return c
+}
+
+Listing 10-3: The implementation of the core RSA encryption function from the Go language cryptography library
+
+The main operation here is c.Exp(m, e, pub.N), which raises a message, m, to the power e modulo pub.N, and assigns the result to the variable c.
+
+If you choose to implement RSA instead of using a readily available library function, be sure to rely on an existing big-number library, which is a set of functions and types that allow you to define and compute arithmetic operations on large numbers thousands of bits long. For example, you might use the GNU Multiple Precision (GMP) arithmetic library in C or in Go’s big package. (Believe me, you don’t want to implement big-number arithmetic yourself.)
+
+Even if you just use a library function when implementing RSA, ensure you understand how the internals work so you can assess the risk and whether it matches the application’s security requirements.
+
+A Fast Exponentiation Algorithm
+
+Exponentiation is the operation of raising x to the power e, when computing xe mod n. When working with big numbers, as with RSA, this operation can be extremely slow if naively implemented. How to efficiently compute exponentiations?
+
+The naive way to compute xe mod n takes e – 1 multiplications, as the pseudocode algorithm in Listing 10-4 demonstrates.
+
+expModNaive(x, e, n) {
+ y = x
+ for i = 1 to e – 1 {
+  y = y * x mod n
+ }
+ return y
+}
+
+Listing 10-4: A naive exponentiation algorithm in pseudocode, raising x to the power e modulo n
+
+This algorithm is simple but highly inefficient. You can get the same result exponentially faster by squaring rather than multiplying intermediate values y until you reach the correct value. This family of methods is called square-and-multiply, exponentiation by squaring, or binary exponentiation.
+
+Say you want to compute 365,537 mod 36,567,232,109,354,321, for example. (The number 65,537 is the public exponent in most RSA implementations.) You could multiply the number 3 by itself 65,536 times, or you could approach this problem knowing that you can write 65,537 as 216 + 1 and use a series of squaring operations instead. Essentially, you initialize a variable, y = 3, and then compute the following squaring (y2) operations:
+
+1. Set y = y2 mod n (now y = 32 mod n).
+2. Set y = y2 mod n (now y = (32)2 mod n = 34 mod n).
+3. Set y = y2 mod n (now y = (34)2 = 38 mod n).
+4. Set y = y2 mod n (now y = (38)2 = 316 mod n).
+5. Set y = y2 mod n (now y = (316)2 = 332 mod n).
+
+And so on until y = 365,536, by performing 16 squarings.
+
+To get the final result, you would return 3 × y mod n = 365,537 mod n = 26,652,909,283,612,267. In other words, you compute the result with only 17 multiplications rather than 65,536 with the naive method.
+
+More generally, a square-and-multiply method works by scanning the exponent’s bits one by one, computing the square for each exponent’s bit to double the exponent’s value, and multiplying by the original number for each bit with a value of 1 encountered. In the preceding example, the exponent 65,537 is 10000000000000001 in binary, and you squared y for each new bit and multiplied by the original number 3 only for the very first and last bits. Listing 10-5 shows how this works as a general algorithm in pseudocode to compute xe mod n when the exponent e consists of bits em – 1 em – 2 . . . e1 e0, where e0 is the least significant bit.
+
+expMod(x, e, n) {
+ y = x
+ for i = m – 1 to 0 {
+  y = y * y mod n
+  if ei == 1 then
+   y = y * x mod n
+ }
+ return y
+}
+
+Listing 10-5: A fast exponentiation algorithm in pseudocode, raising x to the power e modulo n
+
+The expMod() algorithm runs in time O(m), whereas the naive algorithm runs in time O(2m), where m is the bit length of the exponent. Here, O() is the asymptotic complexity notation introduced in Chapter 9.
+
+All serious systems implement some variant of this simplest square-and-multiply method. One such variant is the sliding window method, which considers blocks of bits rather than individual bits to perform a given multiplication operation. For example, see the function expNN() of the Go language, whose source code is available at https://go.dev/src/math/big/nat.go.
+
+How secure are these square-and-multiply exponentiation algorithms? Unfortunately, the tricks to speed the process up often result in increased vulnerability against some attacks.
+
+The weakness of these algorithms stems from the fact that the exponentiation operations are heavily dependent on the exponent’s value. The if operation in Listing 10-5 takes a different branch based on whether an exponent’s bit is 0 or 1. If a bit is 1, an iteration of the for loop is slower than it is for 0, and attackers who monitor the execution time of the RSA operation can exploit this time difference to recover a private exponent. This is called a timing attack. Attacks on hardware can distinguish 1 bit from 0 bits by monitoring the device’s power consumption and observing which iterations perform an extra multiplication to reveal which bits of the private exponent are 1.
+
+Depending on the type of platform, the information channel may not be execution time. For example, you might distinguish 1-bits in the exponent from 0-bits by measuring the device’s power consumption and observing which iterations perform additional multiplication, revealing the private exponent bits at 1. This is a power-analysis attack. Few open source cryptographic libraries contain effective defenses against these types of attacks.
+
+Small Exponents for Faster Public-Key Operations
+
+Because an RSA computation is essentially the computation of an exponentiation, its performance depends on the value of the numbers involved, in particular the exponent. Smaller exponents require fewer multiplications and can therefore make the exponentiation computation much faster.
+
+In principle, the public exponent e can be any value between 3 and φ(n) – 1, as long as e and φ(n) are coprime. But in practice you’ll find only small values of e, and most of the time e = 65,537 due to concerns with encryption and signature verification speed. For example, the Microsoft Windows CryptoAPI supports only public exponents that fit in a 32-bit integer. The larger the e, the slower it is to compute xe mod n.
+
+Unlike the size of the public exponent, the private exponent d is inevitably about as large as n, making decryption much slower than encryption, and signing much slower than verification. Because d is secret, it must be unpredictable and therefore can’t be restricted to a small value. For example, if e is fixed to 65,537, the corresponding d is usually of the same order of magnitude as the modulus n, which would be close to 22,048 if n is 2,048 bits long.
+
+As discussed in “A Fast Exponentiation Algorithm” on page 206, raising a number to the power 65,537 takes 17 multiplications, whereas raising a number to the power of some 2,048-bit number takes on the order of 3,000 multiplications.
+
+You can estimate the speed of RSA by using the OpenSSL toolkit. For example, Listing 10-6 shows the results of 512-, 1,024-, 2,048-, and 4,096-bit RSA operations on a MacBook equipped with an M2 chipset:
+
+Doing 1024 bits private rsa sign ops for 10s: 119019 1024 bits private RSA sign ops in 9.93s
+Doing 1024 bits public rsa verify ops for 10s: 2573979 1024 bits public RSA verify ops in 9.93s
+Doing 2048 bits private rsa sign ops for 10s: 19184 2048 bits private RSA sign ops in 9.93s
+Doing 2048 bits public rsa verify ops for 10s: 769696 2048 bits public RSA verify ops in 9.93s
+Doing 4096 bits private rsa sign ops for 10s: 3005 4096 bits private RSA sign ops in 9.92s
+Doing 4096 bits public rsa verify ops for 10s: 206367 4096 bits public RSA verify ops in 9.91s
+ sign verify sign/s verify/s
+rsa 1024 bits 0.000083s 0.000004s 11985.8 259212.4
+rsa 2048 bits 0.000518s 0.000013s 1931.9 77512.2
+rsa 4096 bits 0.003301s 0.000048s 302.9 20824.1
+--snip--
+
+Listing 10-6: Example benchmarks of RSA operations using the OpenSSL toolkit (version 3.2.0)
+
+To get an idea of how much slower verification is compared to signature generation, compute the ratio of the verification time over signature time. The benchmarks in Listing 10-6 show that I’ve got verification-over-signature speed ratios of approximately 21.6, 40.1, and 68.7 for 1,024-, 2,048-, and 4,096-bit moduli, respectively. The gap grows with the modulus size because the number of multiplications for e operations remains constant with respect to the modulus size (for example, 17 operations when e = 65,537), while private-key operations always need more multiplications for a greater modulus because d grows accordingly.
+
+If small exponents are so nice, why use 65,537 and not something like 3? It would actually be fine (and faster) to use 3 as an exponent when implementing RSA with a secure scheme such as OAEP, PSS, or FDH. Cryptographers avoid doing so, however, because when e = 3, less secure schemes make certain types of mathematical attacks possible. The number 65,537 is large enough to avoid such low-exponent attacks, and it has only two nonzero bits, which decreases the computation time when computing x65,537. The number 65,537 is also special for mathematicians: it’s the fourth Fermat number, or a number of the form 21()2n+ because it’s equal to 216 + 1, where 16 = 24, but that’s a curiosity irrelevant to most cryptographic engineers.
+
+The Chinese Remainder Theorem
+
+The most common trick to speed up decryption and signature generation (that is, the computation of yd mod n) is the Chinese remainder theorem (CRT), which makes RSA about four times faster.
+
+The CRT allows for faster decryption by computing two exponentiations, modulo p and modulo q, rather than a single one modulo n. Because p and q are much smaller than n, it’s faster to perform two “small” exponentiations than a single “big” one.
+
+The Chinese remainder theorem isn’t specific to RSA. It’s a general arithmetic result that, in its simplest form, states that if n = n1 n2 n3 . . ., where the nis are pairwise coprime (that is, GCD(ni, nj) = 1 for any distinct i and j), then one can compute the value x mod n from the values x mod n1, x mod n2, x mod n3, . . . For example, say you have n = 1,155, which is the product of prime factors 3 × 5 × 7 × 11, and say you want to determine x that satisfies x mod 3 = 2, x mod 5 = 1, x mod 7 = 6, and x mod 11 = 8. (I’ve chosen 2, 1, 6, and 8 arbitrarily.) To find x using the Chinese remainder theorem, compute the sum P(n1) + P(n2) + . . ., where P(ni) is defined as follows:
+
+Note that the second term, n/ni, is equal to the product of all factors other than this ni.
+
+To apply this formula to this example and recover x mod 1155, compute P(3), P(5), P(7), and P(11); then add them together to get the following expression:
+
+Here, I’ve just applied the preceding definition of P(ni). (The math behind finding each number is straightforward, but I won’t detail it here.) You can then reduce this expression to [770 + 231 + 1980 + 1680] mod n = 41. As 41 is the number I’d picked for this example, you’ve got the correct result.
+
+Applying the CRT to RSA is simpler than the previous example because there are only two factors for each n (namely, p and q). Given a ciphertext y to decrypt, instead of computing yd mod n, use the CRT to compute xp = ys mod p, where s = d mod (p – 1) and xq = yt mod q, where t = d mod (q – 1). Combine these two expressions and compute x to be the following:
+
+That’s it. This is faster than a single exponentiation even with the square-and-multiply trick because the multiplication-heavy operations are carried out on modulo p and q, numbers that are twice as small as n, whereas the complexity of exponentiation increases faster than linearly. When you double the size of the number, you don’t just double the cost of exponentiation—it grows faster.
+
+NOTE In the final operation, you can compute the two numbers q × (1/q mod p) and p × (1/p mod q) in advance, which means you need to compute only two multiplications and an addition of modulo n to find x.
+
+Unfortunately, there’s a security caveat attached to these techniques.
+
+How Things Can Go Wrong
+
+Even more elegant than the RSA scheme itself is the range of attacks that work either because the implementation leaks (or can be made to leak) information on its internals or because RSA is used insecurely. I discuss two classic examples of these types of attacks in the sections that follow.
+
+The Bellcore Attack on RSA-CRT
+
+The Bellcore attack on RSA is one of the most important attacks in the history of RSA. First discovered in 1996, it stood out because it exploited RSA’s vulnerability to fault injections—attacks that force part of the algorithm to misbehave and potentially yield incorrect results. For example, one may temporarily perturb hardware circuits or embedded systems by suddenly altering their voltage supply or beaming a laser pulse to a carefully chosen part of a chip. Attackers can then exploit the resulting faults in an algorithm’s internals by observing the impact on the result. Comparing the correct result with a faulty one can provide information on the algorithm’s internal values, including secret values. Likewise, attempts to learn whether the result is valid might leak exploitable information.
+
+The Bellcore attack is such a fault attack. It works on RSA signature schemes that use the Chinese remainder theorem and that are deterministic—meaning it works on FDH but not on PSS, which is probabilistic.
+
+To understand the Bellcore attack, recall from the previous section that with CRT, you obtain the result that’s equal to xd mod n by computing the following, where xp = ys mod p and xq = yt mod q:
+
+xx = × pq qq ×+ () 11 / mod px ×× pp () / mod qn mod
+
+Now assume that an attacker induces a fault in the computation of xq so that you end up with some incorrect value, which differs from the actual xq. Let’s call this incorrect value xq′ and the final result obtained x′. The attacker can then subtract the incorrect signature x′ from the correct signature x to factor n, which results in the following:
+
+ – xx −= ′′ () xx qq ×× pp () 1/ mod qn mod
+
+The value x – x′ is therefore a multiple of p, so p is a divisor of x – x′. Because p is also a divisor of n, the greatest common divisor of n and x – x′ yields p, GCD(x – x′, n) = p. You can then compute q = n/p and d, resulting in a total break of RSA signatures.
+
+A variant of this attack works when you know only that the message is signed, and not the correct signature. There’s also a similar fault attack on the modulus value, rather than on the CRT values computation, but I won’t go into detail on that here.
+
+Shared Private Exponents or Moduli
+
+Now I’ll show you why your public key shouldn’t have the same modulus n as that of someone else.
+
+Private keys belonging to different systems or people should have different private exponents, d, even if the keys use different moduli. Or you could try your own value of d to decrypt messages encrypted for other entities, until you hit one that shares the same d. By the same token, different key pairs should have different n modulus values, even if they have different ds, because p and q are usually part of the private key. Hence, if I share the same n and thus the same p and q, I can compute your private key from your public key e using p and q.
+
+Imagine that you know your private exponent d1 and the public exponent e2 of another person with whom you share the same modulus n, but without knowing its factors p and q. How can you calculate p and q from your private exponent d1 to find the private exponent d2 of the other person? The solution is a bit technical but elegant.
+
+Remember that d and e satisfy ed = kφ(n) + 1, where φ(n) is secret and could reveal p and q. You don’t know k or φ(n), but you can compute kφ(n) = ed – 1.
+
+What can you do with kφ(n)? According to Euler’s theorem, for any number a coprime with n, you have aφ(n) = 1 mod n. Therefore, modulo n you have the following:
+
+aa kn n k ϕϕ () () k == () 11 = mod n
+
+Because kφ(n) is an even number, you can write it as 2st for some numbers s and t. That is, you’ll be able to write akφ(n) = 1 mod n under the form x2 = 1 mod n for some x easily computed from kφ(n). You can call such an x a root of unity.
+
+The key observation is that x2 = 1 mod n is equivalent to saying that the value x2 – 1 = (x – 1)(x + 1) divides n. In other words, x – 1 or x + 1 must have a common factor with n, which can give you the factorization of n.
+
+Listing 10-7 shows a Python implementation of this method where, to find the factors p and q from n and d, I use small, 64-bit numbers for the sake of simplicity.
+
+from math import gcd
+n = 36567232109354321
+e = 13771927877214701
+d = 15417970063428857
+kphi = d*e - 1
+t = kphi
+while t % 2 == 0:
+ t = divmod(t, 2)[0]
+a = 2
+while a < 100:
+ k = t
+ while k < kphi:
+  x = pow(a, k, n)
+  if x != 1 and x != (n - 1) and pow(x, 2, n) == 1:
+   p = gcd(x - 1, n)
+   break
+  k = k*2
+ a = a + 2
+q = n//p
+assert (p*q) == n
+print('p = ', p)
+print('q = ', q)
+
+Listing 10-7: A Python program that computes the prime factors p and q from the private exponent d
+
+This program determines kφ(n) from e and d by finding the number t such that kφ(n) = 2st, for some s. Then it looks for a and k such that (ak)2 = 1 mod n, using t as a starting point for k. When this condition is satisfied, you’ve found a solution. It then determines the factor p and verifies that the value of pq equals the value of n. It then prints the resulting values of p and q:
+
+p = 2046223079
+q = 17870599
+
+The program correctly returns the two factors.

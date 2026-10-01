@@ -1,0 +1,48 @@
+Exercises 08: ECIES and SUCI
+
+0. What is ECIES an abbreviation of?
+    Elliptic Curve Integrated Encryption Scheme
+
+1. What is DLIES an abbreviation of?
+    Discrete Logarithm Integrated Encryption Scheme
+
+2. Does ECIES have perfect forward secrecy?
+    • Explain why/why not
+
+3. What would u•V denote?
+    • Is it the same as vU?
+        u ∘ v denotes composition of u and v, meaning apply v first, then u. No, it is generally not the same as v ∘ u.
+
+4. In ECIES (explain), is it:
+    • Encrypt-and-MAC?
+    • MAC-then-encrypt?
+    • Encrypt-then-MAC?
+
+5. ECIES:
+    Alice has Bob’s public DH key. She generates an ephemeral key pair (a_priv, a_pub). Then she computes the dh secret and generates the two keys. 
+    She uses the two keys to protect a message m, producing a ciphertext c and a tag t. She then sends a_pub + c + t to Bob. Bob computes the dh secret, the symmetric keys, then verifies the tag and decrypts the ciphertext. Bob then sees m.
+    • What was achieved?
+    • What was not achieved?
+
+6. What does the abbreviation SUCI mean?
+
+7. What is SUPI?
+
+8. Why is the “Home Network Identifier” included in the SUCI?
+
+9. Why is the “Home Network Public Key ID” included in the SUCI?
+
+10. What is the “Protection Scheme Output” and what does it contain?
+
+11. What is the SIDF?
+
+12. What is GUTI?
+
+13. The SUCI scheme is not used for most of the accesses. Is that a privacy problem? (explain)
+
+14. Which encryption function is used in SUCI, and in which mode-of-operation?
+
+15. Which MAC is used in SUCI?
+
+16. Should SUCI be used in 6G also?
+    • Why? / why not?

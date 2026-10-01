@@ -1,0 +1,56 @@
+Exercise 10: Access security in 5G
+You should explain meticulously for all the “what is” questions. You may have to look beyond the lecture notes to answer all the questions.
+
+0. What is the “eSIM” and which form factor (ff) does it have?
+
+1. What are the security differences between USIM and eSIM?
+
+2. What is the difference between eSIM and iSIM? Does it matter?
+
+3. Network functions (google them to find more info) and security:
+    • What is the UDM network function?
+    • What is the SEPP network function?
+    • What is the AUSF network function?
+    • What is the SEAF network function?
+    • What is the ARPF network function?
+    • What is the SIDF network function?
+
+4. What is “subscriber identity confidentiality”?
+
+5. How did the “TMSI” scheme help to protect against tracking?
+
+6. Why wasn’t the TMSI scheme sufficient against active adversaries?
+
+7. In SUCI (ECIES), one of the DH key-pairs are (more or less) permanent while the other is only used once.
+    • Which key-pair (HPLMN or UE) is permanent, and which is ephemeral?
+    • What is advantage of this arrangement?
+
+8. What is SUPI and what does it mean that it is “multi-modal”?
+
+9. What is SUCI, and why is the “Home Network Identifier” needed?
+
+10. SUCI contains a “public key” – which public key is that and who issued it?
+
+11. There are two anchor keys – which are those and to which network function do they belong?
+
+12. Between which elements are the basic challenge-response?
+
+13. What part does the USIM (eSIM/iSIM) play in the 5G-AKA protocol?
+
+14. Which part does the ME do?
+
+15. Which of the 3G (“MILENAGE”) cryptographic functions are still needed in 5G AKA?
+
+16. What security services are handled by TLS in the core network?
+
+17. Why is there a need for authorization/access control in the 5G core network?
+
+18. Which protocol is used for delegation of access rights in the 5G core network?
+
+19. What is NESAS, and what authority manages the NESAS arrangements?
+
+20. What is SECAM and SCAS?
+
+21. What is specified in TS 33.517?
+
+22. Who are Anand R. Prasad and Alf Zugenmaier? (read the River_3GPP_5G_Security.pdf paper)

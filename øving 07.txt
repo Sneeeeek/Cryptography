@@ -1,48 +1,150 @@
 Exercises 07: Asymmetric Encryption
 
 0. What defines the “Polynomial”, “Exponential” and “Superpolynomial” hardness categories?
+    N = input size
+    K = some constant
+    Polynomial is the whole family of runtimes like n, n^2, n^3, n^k for any fixed constant k
+
+    Polynomial: N^K
+        K is fixed, n varies with problem size
+    Exponential: K^N
+        K is fixed, n varies with problem size
+
+    From powerpoint:
+        Polynomial
+            Polynomial-time algorithms are the very definition of practically feasible.
+        Exponential
+            Exponential-time problems are generally out of reach (intractable)
+            But beware of best-case vs worst-case!
+            For some domains, sub-optimal solutions can have low complexity
+        Superpolynomial
+            Characterized by O(f(n))
+            Where f(n) is a function that grows faster than any polynomial
+            Example: O(nlog(n))
+            These are also (generally) intractable problems
+    
+    An intractable problem is a problem that can technically be solved, but requires so much time and computing power that it is impossible to solve efficiently for large inputs. 
 
 1. Is NP equivalent to EXP (exponential) complexity?
+    No.
 
 2. How hard is the “factoring problem” (used in RSA)?
+    It is a hard problem, but probably not NP-complete. 
+    For RSA, N is chosen as the product of two large primes, and factoring such numbers is computationally infeasible. 
+    Its "probably not solvable efficiently".
 
 3. Is the DLP problem “hard”?
+    With correctly chosen parameters, yes.
 
 4. Check out more about the DH inventors?
     • Who where they (and why is Merkle also involved)
+        DH -> Diffie and Hellman.
+        Whitfield Diffie and Martin Hellman invented the Diffie-Hellman key exchange.
+        Ralph Merkle developed early ideas for public-key cryptography and key exchange before the famous DH paper.
+            He was one of the first to push the public-key idea and related concepts
     • Who was first with asymmetric methods?
+        Merkle was the first to release publicly. 
 
 5. Who were the RSA inventors?
+        Ron Rivest, Adi Shamir, Leonard Adleman
     • Who was the mathematician amongst them?
+        Adi Shamir was the mathematician.
     • What else is Shamir known for?
+        From wikipedia:
+            He is a co-inventor of the Rivest–Shamir–Adleman (RSA) algorithm (along with Ron Rivest and Len Adleman), 
+            a co-inventor of the Feige–Fiat–Shamir identification scheme (along with Uriel Feige and Amos Fiat), 
+            one of the inventors of differential cryptanalysis and has made numerous contributions to the fields of cryptography and computer science.
+        He is very famous supposedly.
 
 6. What is the difference between a “one-way function” and a “one-way trapdoor function”?
+    A one-way function is easy to compute, but hard to reverse.
+    A one-way trapdoor function is the same idea, except there is a secret shortcut called the trapdoor that makes reversing it easy for someone who knows the secret.
 
 7. What is ECDH and how is it different from “standard” DH?
+    ECDH is a Diffie-Hellman key exchange built on elliptic curves rather than modular exponentiation. It provides comparable security with smaller parameters than standard DH.
 
 8. How large should the RSA keys be to be future-safe?
+    From the book: 
+        In sum, you should view 1,024-bit RSA as insecure and use RSA with at least a 2,048-bit value, but preferably a 4,096-bit one to ensure higher security.
 
 9. Who was Robert D. Carmichael anyway?
+    Robert Daniel Carmichael (March 1, 1879 – May 2, 1967) was an American mathematician.
+    Carmichael's Ph.D. research in mathematics is considered to be the first significant American contribution to the knowledge of differential equations in mathematics.
+    He did research into Carmichael numbers.
+        A Carmichael number is a composite number that can fool a basic Fermat primality test.
+        Take 561. It is a Carmichael number.
+            561 is composite:
+                It factors as: 561 = 3 × 11 × 17
+                So it is  not prime.
+            But it can fool a simple test:
+                a^(n-1) mod n = 1
+            If a crypto system used a weak prime test and accepted 561 as prime, it would build on a bad foundation. Then an attacker could use those hidden factors 3, 11, 17 to break things more easily.
 
 10. Try to improve the RSA python scripts (they are clumsy and inelegant)
 
 11. What is achieved if Alice encrypts a message m with Bob public key (and sends m to Bob)?
+    If Alice encrypts m with Bob’s public key and sends it to Bob, she achieves confidentiality.
+    Only Bob can decrypt it with his private key, so outsiders cannot read the message.
 
 12. What is achieved if Alice encrypts a message m with her own private key (and sends m to Bob)?
+    If Alice encrypts m with her own private key and sends it to Bob, she achieves authentication and integrity, but not confidentiality.
+    Anyone with Alice’s public key can decrypt or verify it, so it is not secret, but it proves the message came from Alice and was not altered.
 
 13. What is achieved by a DH exchange?
+    https://upload.wikimedia.org/wikipedia/commons/c/c8/DiffieHellman.png
+    From:
+        Diffie-Hellman key exchange, step by step
+
+        Both sides agree on public parameters
+            They choose a large prime p and a generator g. These are public.
+
+        Alice chooses a secret number a.
+
+        Bob chooses a secret number b.
+
+        Alice creates her public value
+            She computes:
+            A = g^a mod p
+            and sends A to Bob.
+
+        Bob creates his public value
+            He computes:
+            B = g^b mod p
+            and sends B to Alice.
+
+        Alice computes the shared secret
+            She uses Bob’s value and her secret:
+            s = B^a mod p
+
+        Bob computes the shared secret
+            He uses Alice’s value and his secret:
+            s = A^b mod p
+
+        Both get the same result
+            The shared secret is the same on both sides:
+            B^a mod p = A^b mod p
 
 14. What is not achieved by a basic DH exchange?
+    It does not authenticate the parties.
 
 15. What is MitM?
+        Man in the Middle attack.  
     • Explain the problem?
+        An attacker secretly sits between two parties and intercepts their communication. Since RSA doesnt authenticate the parties, theres "nothing" preventing a malicious party from mess with the communication.
+        Since there is no authentication, you can do A ↔ C ↔ B. C just sits in the middle like recieve from A, decrypt with the DH keys they have together, reencrypt with the DH keys they have with B, and forward it. 
     • How can the MitM problem be solved?
+        By having some sort of mechanism for authentication.
 
 16. Does it matter to Alice if Eve sees the DH exchange data? (why / why not)
+    Assuming a proper implementation of RSA: As long as Eve doesnt know alices private key, no.
+    You cannot compute Alices private key or the shared secret from the information.
 
 17. What is PFS and why does it matter?
+    Perfect Forward Secrecy. It means if a key gets stolen, old recorded sessions still cannot be decrypted.
 
 18. What does “ephemeral” mean?
+    Ephemeral means lasting a very short time.
+    A temporary cryptographic key generated for a single execution of a process or a single session, and then promptly discarded.
 
 19. Run the PYCA_RSA_example_x.py programs. Are the results as expected?
 
@@ -64,9 +166,21 @@ Exercises 07: Asymmetric Encryption
 23. Run the PYCA_DH_example_x.py programs. Are the results as expected?
 
 24. What is KEM and what is it used for?
+    Key Encapsulation Mechanism
+    Its kinda like a one-sided DH exchange.
+        Since Bobs public key and parameters are freely available, anyone can use these to create and send an encrypted message that only bob can decrypt since he is the only person that has the private key.
+    KEM is useful when a client wants to establish a secure session with the server:
+        the server publishes a public key
+        the client encapsulates a secret to it
+        both derive a shared session key
+        then they use fast symmetric crypto for the actual traffic
+
 
 25. What is the KEM keys called?
+    Shared secret or session key.
 
 26. Are KEM methods in use today?
+    Yes.
 
 27. Are KEM methods quantum-safe?
+    Depends on the method. Modern ones can be yes.

@@ -13,7 +13,7 @@ Exercises 06: AEAD
             This can be fixed relatively easily tho.
 
 2. What is Encrypt-then-Authenticate?
-        Encrypt the plaintext -> MAC the ciphertext -> send both to recipient. Recipient MACs the ciphertext to confirm if its correct.
+        Encrypt the plaintext -> MAC the ciphertext using the key to create a tag -> send both to recipient. Recipient MACs the ciphertext using the key to confirm if its correct.
     • Are there any advantages or drawbacks to authenticate (MAC) the ciphertext?
         Since you check first before doing decryption, you dont have to worry about spending effort decrypting a corrupted message.
         Since the MAC requires a key, an attacker cant fake a message easily, which makes it harder to transmit malicious data.
@@ -32,27 +32,46 @@ Exercises 06: AEAD
 5. What kind of protection (if any) is there for the AD?
     Integrity Protection
     From the book:
-        An AEAD algorithm allows you to attach cleartext data to a ciphertext in such a way that if the cleartext data is corrupted, 
-        the authentication tag won’t validate, and the ciphertext won’t decrypt. 
+        An AEAD algorithm allows you to attach cleartext data to a ciphertext in such a way that if the cleartext data is corrupted, the authentication tag won’t validate, and the ciphertext won’t decrypt. 
 
 6. AEAD: What happens if the tag is invalid?
      If the tag is invalid, the plaintext is discarded. 
 
 7. Are AEAD used in any important cases?
-    
+    From the book:
+        Nearly all authenticated ciphers in use today support associated data.
+    Some examples from google:
+        TLS 1.3, HTTPS, Signal and other secure messaging systems, VPNs
 
 8. Can you mention any NIST defined AEAD cipher modes?
+    From the book: 
+        AES-GCM is a NIST standard (SP 800-38D)
+        AES-GCM is based on the AES algorithm, and the Galois counter mode (GCM) of operation is essentially a tweak of the CTR mode that incorporates a small and efficient component to compute an authentication tag. 
 
 9. Is AEAD supported by the python cryptography module (OpenSSL)?
+    Yes.
 
 10. What is GHASH?
+    From google:
+        GHASH is the authentication function in AES-GCM. It takes the associated data and ciphertext, mixes them with a secret hash key H, and produces a value that is XORed with AES(K, N||0) to form the final tag.
+    From the book: 
+        GHASH uses polynomial notation to multiply each ciphertext block with the authentication key H. 
 
 11. Could you use GHASH instead of SHA-256? (would it be wise?)
+    No. GHASH takes a key, SHA-256 does not. Its intended for a different use case.
+    It would not be wise.
 
 12. Which NIST AEAD algorithm do you think is most important (why?)?
+    AES-CGM. Its efficient, standardised, and in use everywhere.
 
 13. How long is the IV/Nonce in AES-GCM?
+    Can be any, but its common to use 12 bytes lenght.
 
 14. What is the authoritative reference for AES-GCM-SIV?
+    According to google:
+        Gueron, S., et al. AES-GCM-SIV: Nonce Misuse-Resistant Authenticated Encryption. Request for Comments RFC 8452, Internet Engineering Task Force, Apr. 2019. IETF, https://doi.org/10.17487/RFC8452.
 
 15. Can you imagine why the IV in AES-GCM-SIV is 12 bytes (= 96 bits)?
+    Did some reasearch on it. 
+        AES blocks are 16 bytes each, and GCM-SIV splits that into 12 byte for IV and 4 byte for counter. If you do more than 12 bytes it has to hash the size down which introduces potential collisions and takes extra processing effort.
+        If its 12, you just need to append it. 
