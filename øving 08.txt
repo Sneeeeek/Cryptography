@@ -9,8 +9,8 @@ Exercises 08: ECIES and SUCI
 2. Does ECIES have perfect forward secrecy?
     • Explain why/why not
 
-3. What would u•V denote?
-    • Is it the same as vU?
+3. What would u ∘ V denote?
+    • Is it the same as v ∘ U?
         u ∘ v denotes composition of u and v, meaning apply v first, then u. No, it is generally not the same as v ∘ u.
 
 4. In ECIES (explain), is it:
@@ -25,24 +25,50 @@ Exercises 08: ECIES and SUCI
     • What was not achieved?
 
 6. What does the abbreviation SUCI mean?
+    Subscription Concealed Identifier.
 
 7. What is SUPI?
+    Subscription Permanent Identifier.
+    A unique 15-digit identification number assigned to a mobile subscriber in 5G networks.
 
 8. Why is the “Home Network Identifier” included in the SUCI?
+    To let the network who is currently serving you know who to route the concealed identifier to.
 
 9. Why is the “Home Network Public Key ID” included in the SUCI?
+    The home network may have multiple keys in use. The key id tell them which key to use for decryption.
 
 10. What is the “Protection Scheme Output” and what does it contain?
+    Imagine your real subscriber identity is:
+        SUPI = 123456789
+    The phone does not send that directly.
+    Instead it builds a SUCI like this:
+        SUCI = [SUPI type] || [Home Network ID] || [Protection Scheme ID] || [Home Network Public Key ID] || [Protection Scheme Output]
+    Example with fake values:
+        SUCI = IMSI || xxxxx.home.net || ECIES || 07 || "protected version of 123456789"
+    "Im using IMSI + my home is this + Im encrypted with this scheme + I use this key + <the encrypted identity number>"
+        Using these, the home network knows what to use and can decrypt the PSO to get my identification number and be quite sure that yep this is snek connecting.
 
 11. What is the SIDF?
+    Subscription Identifier De-Concealing Function.
+    The function in the home network that takes the SUCI and recovers the hidden SUPI.
+    SIDF = deconceal(PSO, key) basically
 
 12. What is GUTI?
+    Globally Unique Temporary Identifier.
+    A temporary identity the network can assign to a subscriber so the phone does not need to keep sending the permanent identity every time.
+    You authenticate with the home network -> The home network confirms you -> Then the serving network assigns you a temporary identity, the GUTI.
+    Kinda like a session ID type of deal.
 
 13. The SUCI scheme is not used for most of the accesses. Is that a privacy problem? (explain)
+    No. Most of the accesses will be done using GUTI.
 
 14. Which encryption function is used in SUCI, and in which mode-of-operation?
+    ECIES. There is no mode of operation becuase its not a block cipher. 
 
 15. Which MAC is used in SUCI?
+    HMAC-SHA-256
 
 16. Should SUCI be used in 6G also?
-    • Why? / why not?
+        • Why? / why not?
+    SUCI seems pretty good from what i understand so i would say yes at least the principle of SUCI. However, its impossible to say what the future holds. Quantum computing may impact SUCI.
+    If we use SUCI for 6G we shouldnt just copy paste it, we should look at where we can improve it. 

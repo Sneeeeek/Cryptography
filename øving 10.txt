@@ -1,56 +1,135 @@
 Exercise 10: Access security in 5G
+
 You should explain meticulously for all the “what is” questions. You may have to look beyond the lecture notes to answer all the questions.
 
 0. What is the “eSIM” and which form factor (ff) does it have?
+    From wikipedia: 
+    An eSIM (embedded subscriber identity module) is a form of SIM card that is embedded directly into a device as software installed onto an eUICC chip. 
+    In contrast to physical SIM cards, users can connect to and change mobile network operators via the device settings and without the need to physically add or swap a SIM card from the device
+        One common physical form factor of an eUICC chip is commonly designated Machine-to-Machine Form Factor 2 (MFF2).
 
 1. What are the security differences between USIM and eSIM?
+    Its harder to tamper with since its not a physical card you can easily remove.
+    Adding remote capabilities comes with a broader attack surface since you now have to deal with servers and security and allat for setting the eSIM data isntead of just flashing it at the factory. 
 
 2. What is the difference between eSIM and iSIM? Does it matter?
+    eSIM is a discrete embedded chip.
+    iSIM is integrated into the SoC.
+    iSIM takes up less physical space, but since its integrated into the SoC it more dependent on the security of the SoC.
+    If youre a user, not it doesnt really matter. But for manufacturers yes it matters becuase it means you need to design the hardware for it.
 
 3. Network functions (google them to find more info) and security:
     • What is the UDM network function?
+        UDM = Unified Data Management. It is a 5G Core network function responsible for managing subscriber data and providing services related to subscription information and authentication.
     • What is the SEPP network function?
+        https://www.iplook.com/u_file/2304/photo/f19f8e2108.png
+        SEPP = Security Edge Protection Proxy. It sits at the edge of a PLMN and protects control-plane traffic between different operators, especially traffic crossing the N32 interface. It acts as a security gateway between PLMNs.
     • What is the AUSF network function?
+        AUSF = Authentication Server Function. It is responsible for verifying the identity of a subscriber, validating their subscription data, and determining the appropriate security context for the subscriber.
     • What is the SEAF network function?
+        SEAF = Security Anchor Function. It is part of the serving network and handles the serving-network side of the primary authentication procedure. It derives/holds the K_SEAF anchor key and provides the basis for later access security.
     • What is the ARPF network function?
+        ARPF = Authentication Credential Repository and Processing Function. The ARPF is a functional element of the UDM (Unified Data Management), responsible for generating 5G HE AV (5G Home Environment Authentication Vectors) based on the subscriber's shared secret key.
     • What is the SIDF network function?
+        SIDF = Subscription Identifier De-concealing Function. The SIDF is a functional element of the UDM (Unified Data Management), responsible for decrypting a SUCI (Subscription Concealed Identifier) to reveal the subscriber's SUPI (Subscription Permanent Identifier). 
 
 4. What is “subscriber identity confidentiality”?
+    The subscriber identity confidentiality feature is the property that the IMSI is not made available or disclosed to unauthorized individuals, entities or processes.
 
 5. How did the “TMSI” scheme help to protect against tracking?
+    TMSI = Temporary Mobile Subscriber Identity.
+    Instead of repeatedly sending the permanent identity, the network could assign the phone a temporary identity. The phone would use this temporary identity when communicating with the network.
+    Since the temporary identity can be changed, someone passively listening to the radio has a harder time linking messages to the same subscriber over a long period of time.
+    However, if an active attacker could interact with the device, they could try to force the device to expose something linkable and reveal its identity.
 
 6. Why wasn’t the TMSI scheme sufficient against active adversaries?
+    Because TMSI only gives you a temporary identifier. It does not stop an attacker from actively sending messages to the phone.
+    An attacker can force the UE (User Equipment -> phone) to respond to requests and potentially use the responses to identify or track it.
+    TMSI helps against passive observation, but it doesnt do much to protect against someone who is actively messing with the communication.
 
 7. In SUCI (ECIES), one of the DH key-pairs are (more or less) permanent while the other is only used once.
     • Which key-pair (HPLMN or UE) is permanent, and which is ephemeral?
+        The HPLMN key-pair is permanent, and the UE key-pair is ephemeral.
+        UE key-pair: generated for that use, then discarded.
     • What is advantage of this arrangement?
+        Two SUCIs generated by the same UE will have different ephemeral public keys and ciphertexts.
+        Makes it much harder for someone observing the radio traffic to correlate different SUCIs to the same subscriber.
 
 8. What is SUPI and what does it mean that it is “multi-modal”?
+    SUPI = Subscription Permanent Identifier.
+    It is the permanent identity of a subscriber in 5G. Kinda like an SSN.
+    “Multi-modal” means that SUPI is not restricted to one specific identifier format. It can contain an IMSI, a Network Specific Identifier (NAI), and some other identifier types defined by 3GPP.
+    So it can support many different "systems" without having to change everything. 
 
 9. What is SUCI, and why is the “Home Network Identifier” needed?
+    SUCI = Subscription Concealed Identifier.
+    It is the encrypted version of the SUPI that the UE sends instead of exposing its permanent identity.
+    The SUCI contains the concealed subscriber identity as well as information needed to route the authentication request to the correct home network.
+    This is needed because the serving network needs to know where to send the authentication request without knowing the actual permanent subscriber identity.
 
 10. SUCI contains a “public key” – which public key is that and who issued it?
+    It is the Home Network Public Key.
+    It is issued by the HPLMN (Home Public Land Mobile Network).
+    The UE uses this public key as part of the protection scheme to conceal the SUPI. The corresponding private key is kept by the home network and is used to de-conceal the identity.
 
 11. There are two anchor keys – which are those and to which network function do they belong?
+    K_AUSF belongs to the AUSF -> AUSF = Authentication Server Function
+    K_SEAF belongs to the SEAF -> SEAF = Security Anchor Function
+        AUSF checks the subscriber’s credentials with help from the home network
+        SEAF sits in the serving network and anchors the security context for access
 
 12. Between which elements are the basic challenge-response?
+    The basic challenge-response is between the UE and the home network, specifically the USIM/subscriber credentials on the UE side and the authentication data generated by the home network.
+    Anatomny of basic challenge-response: 
+        The UE takes the RAND, checks AUTN to make sure the network is authentic, then uses the pre-shared secret key in the USIM to compute a response.
 
 13. What part does the USIM (eSIM/iSIM) play in the 5G-AKA protocol?
+    The USIM stores the long-term secret key K and performs the subscriber-side cryptographic operations.
+    It checks the AUTN sent by the network, verifies that the authentication is legitimate and fresh, and calculates the response to the challenge.
+    From the phone’s point of view, the USIM is accessed through commands that are kind of like an API.
 
 14. Which part does the ME do?
+    ME = Mobile Equipment.
+    UE = ME + USIM
+        ME = the phone hardware and baseband side.
+        USIM = the subscriber identity and secure auth part.
+    It handles the communication with the network and carries out the parts of the 5G-AKA procedure that are assigned to the device rather than the USIM.
+    It forwards the authentication challenge to the USIM, gets the authentication result back, and participates in deriving the keys used for the connection.
 
 15. Which of the 3G (“MILENAGE”) cryptographic functions are still needed in 5G AKA?
+    Kinda struggling to find information about this but from what i can see, it seems like all of them are needed?
+    Pretty unsure about this one.
 
 16. What security services are handled by TLS in the core network?
+    TLS provides authentication, confidentiality and integrity for communication between network functions.
 
 17. Why is there a need for authorization/access control in the 5G core network?
+    Authentication only tells you who something is. It does not tell you what that thing is allowed to do.
+    If every authenticated network function could call every service, compromising one network function could give an attacker access to a lot of the network.
+    Access control is therefore needed to restrict which network functions are allowed to access which services and what they are allowed to do.
 
 18. Which protocol is used for delegation of access rights in the 5G core network?
+    OAuth 2.0
 
 19. What is NESAS, and what authority manages the NESAS arrangements?
+    NESAS = Network Equipment Security Assurance Scheme.
+    It is an industry security assurance scheme for mobile network equipment. 
+    The purpose is to give network operators a common way of assessing the security of equipment vendors and their products.
+    The NESAS scheme is a collaboration and jointly led by 3GPP and the GSMA.
 
 20. What is SECAM and SCAS?
+    Frameworks created by 3GPP to evaluate and ensure the security of 5G network equipment.
+    SECAM = Security Assurance Methodology.
+        Standardized framework for auditing and stress-testing 5G equipment before it ever gets deployed in the real world.
+    SCAS = Security Assurance Specification.
+        The technical documents (3GPP TS 33.5xx series) that provide the actual test cases and security requirements for 5G network components.
 
 21. What is specified in TS 33.517?
+    Title:
+        5G Security Assurance Specification (SCAS) for the Security Edge Protection Proxy (SEPP) network product class.
+    It outlines the security requirements, compliance criteria, and test cases necessary to verify that a SEPP product securely handles inter-PLMN (roaming) signaling.
 
 22. Who are Anand R. Prasad and Alf Zugenmaier? (read the River_3GPP_5G_Security.pdf paper)
+    Prasad -> Chairman of 3GPP SA3, NEC Corporation, Japan
+    Zugenmaier -> Vice Chairman of 3GPP SA3 & Rapporteur, Munich University of Applied Sciences, Germany
+    Co authors on this paper, and major contributors to 3GPP mobile network security standardisation.

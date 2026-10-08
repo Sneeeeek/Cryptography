@@ -1,40 +1,83 @@
 Exercises 09: The recipes layer
+
 0. What is X.509v3 and which standards body defined this recommendation?
+    It defines the format of public key certificates.
+    International Telecommunication Union.
 
 Creating a CSR:
 1. What is a CSR and what is it used for?
+    Certificate signing request.
+    Its a request you send to the certificate authority asking them to sign your shit. Its like sending them application.
+    Doesnt mean they *will* sign it, thats up to the authority.
 
 2. In the cryptography example (for generating an RSA private key used for the CSR):
     • What is the public exponent?
+        65537
     • Key size?
+        2048
     • Do you think this key size is adequate? (why/why not)
+        Right now its okay, but its not expected to be safe for that long.
+
 3. Generate your own CSR, and include your own data to the fields.
+    ✅
 
 4. When writing the private key to disk (as a PEM file), the cryptography module allows us to encrypt the contents.
     • What is the implementation for the “BestAvailableEncryption” option?
+        BestAvailableEncryption is an abstraction layer that selects the library's recommended secure encryption algorithm and Key Derivation Function (KDF) parameters.
+        According to what i read online, the current selectionsa re:
+            Cipher: AES-256-CBC.
+            Key Derivation Function (KDF): PBKDF2 paired with HMAC-SHA256.
+        The point is so you dont accidentally use an insecure cipher.
     • What is the point of the “passphrase”?
+        Thats the key for decryption
+            UmbrellaWarfare
 
 5. How can you check the contents of a CSR (PEM-file) with the OpenSSL command-line utility?
+        openssl req -in request.csr -noout -text
     • Try it out with the CSR that you created in Q.3
+        ✅
 
 Creating Self-signed Certificates
 6. What are the advantages and disadvantages of using self-signed certificates? (discuss)
+    Its easy and free. You dont need the consent of a the CA and you have full control over it.
+    
+    But since its self signed, you cant just trust it automatically on a program level. A visitor needs to actively add it to the trust list. 
+    Since its made by individuals its much more prone to making mistakes which makes it less safe. Since there is no CA, you cant know if someone is actually safe or not.
+    If you want people to visit your site, good luck with that if you have a self signed certificate.
 
 7. Imagine that you are Bob. Should you trust a self-signed certificate issued by Alice? (why/why not)
+    If Alice is just some random person, probably not. You cant know if alice is trustworthy, and even if you are pretty sure they are, you cant know that youre talking to a middleman pretending to be alice. 
+    A self-signed cert only proves that someone controls the private key for that cert.
+    Self-signed certs are fine for private or controlled setups. If you can verify the fingerprint through a separate secure channel (and you trust that Alice is legit), youre good.
 
 8. The lecture notes mention that you must remember to import the datetime module. What is it used for in the code?
+    To set expiry dates for the certificate.
+    not_valid_before and not_valid_after.
 
 9. How long validity-period is used in the self-signed certificate in the example?
+    10 days.
 
 10. Make your own self-signed certificate. Make sure it has 30 days validity.
+    ✅
 
 Cobblestone
 11. Who hosts the https://c2sp.org webpage and what is their mission?
+    The C2SP organization 
+    to "facilitate the maintenance of cryptography specifications using software development methodologies, applying the successful processes of open source to specification documents."
 
 12. See https://c2sp.org/chunked-encryption: For Cobblestone, which hash function is used (full description of mode)?
+    Cobblestone uses HKDF-Expand with SHA-512 for key derivation, and AES-128-GCM as the AEAD. Unless otherwise specified, SHA-512 and AES-128-GCM are recommended.
 
 13. Run OpenSSL_version.py: What version of cryptography and OpenSSL do you run with?
+    Cryptography 50.0.1
+    OpenSSL 4.0.2 25 Aug 2026
 
 14. What is the purpose of the “context”? (explain)
+    "context is application provided additional data, and it MAY be empty."
+    The context is application-provided additional data. It lets the app add extra meaning or separation to the derived values.
 
 15. What are the benefits to using Cobblestone? (discuss)
+    It can handle big files well. Up to 4 PiB they say. And it doesnt explode your memory.
+    Its fast with low overhead.
+    It has Authenticated Encryption (AEAD) -> has confidentiality and integrity.
+    Easy to use.

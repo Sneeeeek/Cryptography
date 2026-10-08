@@ -1,0 +1,75 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number:
+            34:f5:de:a4:10:cb:f8:da:7e:51:cf:8f:1f:f3:77:7f:33:4e:2d:7d
+        Signature Algorithm: sha256WithRSAEncryption
+        Issuer: C=NO, ST=Vestfold, L=Campus Vestfold, O=BTS4410, CN=bts4410.edu
+        Validity
+            Not Before: Oct 31 12:12:52 2024 GMT
+            Not After : Nov 10 12:12:52 2024 GMT
+        Subject: C=NO, ST=Vestfold, L=Campus Vestfold, O=BTS4410, CN=bts4410.edu
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: (2048 bit)
+                Modulus:
+                    00:a2:4e:cd:cd:4b:56:53:bc:80:af:32:e9:35:fb:
+                    ee:ac:ef:93:74:20:66:cc:30:17:8c:39:0e:80:76:
+                    e1:de:ab:08:23:74:5a:89:ed:e1:91:24:06:21:e5:
+                    3d:ad:98:50:ba:d7:ba:b3:9b:6d:8d:b9:6f:bc:af:
+                    cc:95:ff:a0:9f:99:af:eb:4e:81:ce:84:77:6d:c9:
+                    c4:d9:5c:bb:bc:5f:d5:d3:49:c8:1f:cc:4c:bc:4b:
+                    54:8a:dc:ac:de:f8:cd:6a:29:40:fd:09:0e:0e:91:
+                    93:9e:4d:53:60:8f:a3:b8:5c:9f:e7:82:f0:0b:a8:
+                    67:42:4e:ad:f8:25:ff:8d:c9:56:49:bf:0d:0e:1d:
+                    f7:3b:b0:4e:d1:6c:f9:46:f8:e2:dd:6c:55:39:18:
+                    1e:39:2e:14:7f:b2:dd:44:dd:30:8a:ba:7a:4e:58:
+                    ec:03:95:8e:0f:d2:70:ff:db:a2:de:13:88:77:a8:
+                    f7:35:34:c9:50:40:b3:2b:86:a3:a2:c8:e1:48:86:
+                    45:b3:1a:be:e2:a8:77:bc:3a:3c:40:08:55:ed:68:
+                    12:3d:31:fd:93:aa:1a:b6:a3:bc:18:08:2c:f1:04:
+                    0d:9e:64:fb:7d:6f:6a:9d:3d:2f:e6:32:a6:29:4c:
+                    24:06:be:e5:d4:49:a5:7e:db:f3:08:44:6d:4b:31:
+                    d9:7d
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Subject Alternative Name: 
+                DNS:localhost
+    Signature Algorithm: sha256WithRSAEncryption
+    Signature Value:
+        1a:b1:1f:9e:b6:48:0a:5c:d3:2f:8b:9c:f1:bf:3b:87:78:24:
+        d8:b6:bf:ed:81:d9:99:73:a6:3a:9b:af:d3:52:16:48:66:11:
+        43:19:01:b9:a6:2d:d4:82:5a:f6:7a:66:80:cb:ac:e5:77:a9:
+        70:c9:44:ac:bd:30:f6:dc:19:b7:03:1d:fa:58:d3:d4:06:c8:
+        39:21:e3:87:f3:2a:0b:84:5d:33:13:b3:e1:ce:75:3f:eb:7b:
+        a8:db:df:20:52:fe:c7:c1:da:80:f3:c9:fc:b5:be:7f:26:cc:
+        6a:e9:45:7d:ac:90:4b:e9:9d:cb:2b:21:c7:db:6e:91:57:bb:
+        e5:74:80:d0:38:c7:d3:c8:81:84:43:bc:d4:fb:20:1c:a2:16:
+        a3:f9:09:e3:42:ff:67:3d:3b:f7:ac:00:f2:c9:6c:0d:60:9c:
+        fb:38:b2:94:30:f8:f8:52:a4:03:00:c9:ff:4d:4e:4c:2d:2f:
+        dc:f6:d5:11:9f:0d:f1:da:0a:de:a7:f8:4d:24:70:78:c7:8f:
+        b8:8d:2f:34:53:2e:5d:96:75:5f:43:9e:3e:d4:fd:b6:a9:e6:
+        0d:5b:03:db:8f:e9:c8:56:b1:7b:f8:e5:91:31:85:83:2f:3c:
+        bc:1d:7f:6e:0f:c4:9b:e0:be:52:56:3e:4a:6d:f8:e1:97:63:
+        97:06:3b:35
+-----BEGIN CERTIFICATE-----
+MIIDajCCAlKgAwIBAgIUNPXepBDL+Np+Uc+PH/N3fzNOLX0wDQYJKoZIhvcNAQEL
+BQAwYjELMAkGA1UEBhMCTk8xETAPBgNVBAgMCFZlc3Rmb2xkMRgwFgYDVQQHDA9D
+YW1wdXMgVmVzdGZvbGQxEDAOBgNVBAoMB0JUUzQ0MTAxFDASBgNVBAMMC2J0czQ0
+MTAuZWR1MB4XDTI0MTAzMTEyMTI1MloXDTI0MTExMDEyMTI1MlowYjELMAkGA1UE
+BhMCTk8xETAPBgNVBAgMCFZlc3Rmb2xkMRgwFgYDVQQHDA9DYW1wdXMgVmVzdGZv
+bGQxEDAOBgNVBAoMB0JUUzQ0MTAxFDASBgNVBAMMC2J0czQ0MTAuZWR1MIIBIjAN
+BgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAok7NzUtWU7yArzLpNfvurO+TdCBm
+zDAXjDkOgHbh3qsII3Raie3hkSQGIeU9rZhQute6s5ttjblvvK/Mlf+gn5mv606B
+zoR3bcnE2Vy7vF/V00nIH8xMvEtUitys3vjNailA/QkODpGTnk1TYI+juFyf54Lw
+C6hnQk6t+CX/jclWSb8NDh33O7BO0Wz5Rvji3WxVORgeOS4Uf7LdRN0wirp6Tljs
+A5WOD9Jw/9ui3hOId6j3NTTJUECzK4ajosjhSIZFsxq+4qh3vDo8QAhV7WgSPTH9
+k6oatqO8GAgs8QQNnmT7fW9qnT0v5jKmKUwkBr7l1EmlftvzCERtSzHZfQIDAQAB
+oxgwFjAUBgNVHREEDTALgglsb2NhbGhvc3QwDQYJKoZIhvcNAQELBQADggEBABqx
+H562SApc0y+LnPG/O4d4JNi2v+2B2Zlzpjqbr9NSFkhmEUMZAbmmLdSCWvZ6ZoDL
+rOV3qXDJRKy9MPbcGbcDHfpY09QGyDkh44fzKguEXTMTs+HOdT/re6jb3yBS/sfB
+2oDzyfy1vn8mzGrpRX2skEvpncsrIcfbbpFXu+V0gNA4x9PIgYRDvNT7IByiFqP5
+CeNC/2c9O/esAPLJbA1gnPs4spQw+PhSpAMAyf9NTkwtL9z21RGfDfHaCt6n+E0k
+cHjHj7iNLzRTLl2WdV9Dnj7U/bap5g1bA9uP6chWsXv45ZExhYMvPLwdf24PxJvg
+vlJWPkpt+OGXY5cGOzU=
+-----END CERTIFICATE-----
