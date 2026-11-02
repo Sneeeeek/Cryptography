@@ -66,6 +66,7 @@ Exercises 07: Asymmetric Encryption
 8. How large should the RSA keys be to be future-safe?
     From the book: 
         In sum, you should view 1,024-bit RSA as insecure and use RSA with at least a 2,048-bit value, but preferably a 4,096-bit one to ensure higher security.
+    But RSA is vulnerable to quantum computing, so in reality any RSA size is in practice vulnerable.
 
 9. Who was Robert D. Carmichael anyway?
     Robert Daniel Carmichael (March 1, 1879 – May 2, 1967) was an American mathematician.

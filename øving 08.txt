@@ -10,8 +10,8 @@ Exercises 08: ECIES and SUCI
     • Explain why/why not
 
 3. What would u ∘ V denote?
+        Public key is uppercase letter. Lowercase letter is a private key.
     • Is it the same as v ∘ U?
-        u ∘ v denotes composition of u and v, meaning apply v first, then u. No, it is generally not the same as v ∘ u.
 
 4. In ECIES (explain), is it:
     • Encrypt-and-MAC?
@@ -60,10 +60,13 @@ Exercises 08: ECIES and SUCI
     Kinda like a session ID type of deal.
 
 13. The SUCI scheme is not used for most of the accesses. Is that a privacy problem? (explain)
+    SUCI can only be used when the home network supports 5G.
+    Suci is only used for personal subscruptions. Non-personal subscriptions will not use suci. 
     No. Most of the accesses will be done using GUTI.
 
 14. Which encryption function is used in SUCI, and in which mode-of-operation?
-    ECIES. There is no mode of operation becuase its not a block cipher. 
+    AES-128 in CTR mode.
+        ECIES. There is no mode of operation becuase its not a block cipher. 
 
 15. Which MAC is used in SUCI?
     HMAC-SHA-256
