@@ -53,11 +53,15 @@ if  __name__ == "__main__":
     mask1to2 = ord("1") ^ ord("2")
     # Lag blockmask (like lang som meldingen)
     blockmask = bytearray(66)
-    # Byte nr 54 er hvor tallet 1 hører til
+    # Byte nr 55 er hvor tallet 1 hører til
     blockmask[54] = mask1to2
 
     # XOR de to, her gjør vi 1 om til 2 
-    c2 = xor128(ciphertext,blockmask)   
+    c2 = xor128(ciphertext,blockmask)
+
+    # Skriver til ny _EDIT fil istedenfor så slipper jeg å fikse orginalfila hele tiden.
+    with open("oblig 03/Part_A_HCB/HCB_PREPAID_BEER_EDIT.BIN", "wb") as file:
+        file.write(c2)
 
     # Dekrypter og print for å sjekke om det gikk
     p2 = decrypt(key, iv, c2)

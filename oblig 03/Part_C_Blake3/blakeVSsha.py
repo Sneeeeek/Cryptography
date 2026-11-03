@@ -5,13 +5,34 @@ from time import perf_counter
 dbRuns = 100000
 db3Runs = 10000
 
+# Algorithm	    Blob	        Time
+# BLAKE3	    datablob1	    0.094804
+# SHA3	        datablob1	    0.115236
+# BLAKE3	    datablob2	    0.495742
+# SHA3	        datablob2	    3.107946
+# BLAKE3	    datablob3	    18.794108
+# SHA3	        datablob3	    307.316511
+# Blake3 er mye raskere enn SHA3.
+
+# Åpne fila
 with open("oblig 03/Part_C_Blake3/datablob1.bytes", "rb") as dbFile:
+
+    # Les fila
     data = dbFile.read()
+
+    # Marker starttid
     start_time = perf_counter()
+
+    # Loop 100k ganger
     for i in range(dbRuns): 
+
+        # hash med blake3
         blake3.blake3(data).hexdigest()
+
+    # Market stopptid
     end_time = perf_counter()
 
+# kalkuler hvor land tid det tok og print det ut
 elapsed_time = end_time - start_time
 print(f"BLAKE3 on DB1:     {elapsed_time:.6f}", "seconds")
 
@@ -64,13 +85,3 @@ with open("oblig 03/Part_C_Blake3/datablob3.bytes", "rb") as dbFile:
 
 elapsed_time = end_time - start_time
 print(f"SHA3 on DB3:       {elapsed_time:.6f}", "seconds")
-
-# Algorithm	    Blob	        Time
-# BLAKE3	    datablob1	    0.094804
-# SHA3	        datablob1	    0.115236
-# BLAKE3	    datablob2	    0.495742
-# SHA3	        datablob2	    3.107946
-# BLAKE3	    datablob3	    18.794108
-# SHA3	        datablob3	    307.316511
-
-# Blake3 er mye raskere enn SHA3.
