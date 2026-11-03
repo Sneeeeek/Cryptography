@@ -39,15 +39,25 @@ if cmd==CMD_DECONCEAL:
     f.close()
     print("    Loaded: "+ML_SUCI_FILE_NAME+", Length:",len(raw_suci_data))
     
-    print("""
+    IV = raw_suci_data[0:12]
+    home_ID = raw_suci_data[12:27]
+    ML_KEM_ciphertext = raw_suci_data[27:1117]
+    AES_GCM_ciphertext = raw_suci_data[1117:1261]
+
+    ML_KEM_lenPrefix = ML_KEM_ciphertext[:2]
+    ML_KEM_ciphertext = ML_KEM_ciphertext[2:]
+
+    home_ID_lenPrefix = home_ID[:2]
+    home_ID = home_ID[2:]
+
+    decapped_data = decapsulation_key.decapsulate(ML_KEM_ciphertext)
     
-    -------------------------------------------------------------
-    You must do the rest yourself.
-    
-    Good luck!
-    -------------------------------------------------------------
-    
-    """)
+    aesgcm = AESGCM(decapped_data) 
+    aad = IV + home_ID + ML_KEM_ciphertext
+    AES_GCM_cleartext = aesgcm.decrypt(IV, AES_GCM_ciphertext, aad)
+
+    # A boy named sue
+    print("\n",AES_GCM_cleartext.decode())
     
     print("\nHome: Command completed.")    
     sys.exit(0)

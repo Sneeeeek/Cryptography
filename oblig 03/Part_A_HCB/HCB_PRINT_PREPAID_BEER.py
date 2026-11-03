@@ -56,8 +56,12 @@ if  __name__ == "__main__":
     # Byte nr 54 er hvor tallet 1 hører til
     blockmask[54] = mask1to2
 
-    # XOR de to, her gjøre vi 1 om til 2 
+    # XOR de to, her gjør vi 1 om til 2 
     c2 = xor128(ciphertext,blockmask)   
 
+    # Dekrypter og print for å sjekke om det gikk
     p2 = decrypt(key, iv, c2)
     print("  Voucher  :", p2)
+
+    #   Voucher  : b'*** The Homegrown Crypto Bar --- Beer voucher. Value: 1 beers. ***'
+    #   Voucher  : b'*** The Homegrown Crypto Bar --- Beer voucher. Value: 2 beers. ***'
